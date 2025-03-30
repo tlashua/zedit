@@ -64,12 +64,11 @@ fun ZoneCanvas(
         )
     }
 
-    // Calculate drag bounds in pixels
-    val density = LocalDensity.current.density
+    // Calculate drag bounds - simply subtract room size from canvas size
     val dragBounds = remember(canvasSize) {
         Offset(
-            canvasSize.x - (roomSize * density),  // Account for room size in screen pixels
-            canvasSize.y - (roomSize * density)
+            canvasSize.x - roomSize,
+            canvasSize.y - roomSize
         )
     }
 
