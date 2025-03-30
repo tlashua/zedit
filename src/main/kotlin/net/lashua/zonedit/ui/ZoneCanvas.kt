@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -27,6 +28,8 @@ fun ZoneCanvas(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     var scale by remember { mutableStateOf(1f) }
+    
+    val gridSize = 20.dp
     
     // Calculate canvas bounds based on room positions
     val bounds = remember(zone.rooms) {
@@ -59,6 +62,27 @@ fun ZoneCanvas(
                 .horizontalScroll(horizontalScrollState)
                 .verticalScroll(verticalScrollState)
                 .size(canvasSize.x.dp, canvasSize.y.dp)
+                .border(1.dp, Color.Red) // Canvas border for debugging
+                .drawBehind {
+                    // Draw vertical grid lines
+                    for (x in 0..(size.width / gridSize.toPx()).toInt()) {
+                        drawLine(
+                            color = Color.LightGray,
+                            start = Offset(x * gridSize.toPx(), 0f),
+                            end = Offset(x * gridSize.toPx(), size.height),
+                            strokeWidth = 0.5f
+                        )
+                    }
+                    // Draw horizontal grid lines
+                    for (y in 0..(size.height / gridSize.toPx()).toInt()) {
+                        drawLine(
+                            color = Color.LightGray,
+                            start = Offset(0f, y * gridSize.toPx()),
+                            end = Offset(size.width, y * gridSize.toPx()),
+                            strokeWidth = 0.5f
+                        )
+                    }
+                }
                 // Add zoom gesture support
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
