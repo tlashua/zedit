@@ -26,66 +26,107 @@ fun ZoneCanvas(
 ) {
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
+    var scale by remember { mutableStateOf(1f) }
+    
+    // Calculate canvas bounds based on room positions
+    val bounds = remember(zone.rooms) {
+        zone.rooms.fold(Pair(Offset.Zero, Offset.Zero)) { acc, room ->
+            Pair(
+                Offset(
+                    minOf(acc.first.x, room.position.x),
+                    minOf(acc.first.y, room.position.y)
+                ),
+                Offset(
+                    maxOf(acc.second.x, room.position.x),
+                    maxOf(acc.second.y, room.position.y)
+                )
+            )
+        }
+    }
+    
+    // Add padding to bounds
+    val canvasSize = Offset(
+        maxOf(bounds.second.x + 500f, 5000f),
+        maxOf(bounds.second.y + 500f, 5000f)
+    )
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .horizontalScroll(horizontalScrollState)
-            .verticalScroll(verticalScrollState)
-            .size(5000.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        for (room in zone.rooms) {
-            key(room.id) {
-                var position by remember(room.id) { 
-                    mutableStateOf(Offset(room.position.x, room.position.y)) 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(horizontalScrollState)
+                .verticalScroll(verticalScrollState)
+                .size(canvasSize.x.dp, canvasSize.y.dp)
+                // Add zoom gesture support
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(0.5f, 2f)
+                    }
                 }
-                
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(position.x.roundToInt(), position.y.roundToInt()) }
-                        .border(
-                            width = 1.dp,
-                            color = Color.Black
-                        )
-                        .padding(8.dp)
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                
-                                // Calculate new position with bounds checking
-                                val newX = if (dragAmount.x < 0) {
-                                    maxOf(position.x + dragAmount.x, 0f)
-                                } else {
-                                    minOf(position.x + dragAmount.x, 4900f)
+        ) {
+            for (room in zone.rooms) {
+                key(room.id) {
+                    var position by remember(room.id) { 
+                        mutableStateOf(Offset(room.position.x, room.position.y)) 
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .offset { IntOffset(position.x.roundToInt(), position.y.roundToInt()) }
+                            .border(
+                                width = 1.dp,
+                                color = Color.Black
+                            )
+                            .padding(8.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    
+                                    val newX = if (dragAmount.x < 0) {
+                                        maxOf(position.x + dragAmount.x, 0f)
+                                    } else {
+                                        minOf(position.x + dragAmount.x, canvasSize.x - 100f)
+                                    }
+                                    
+                                    val newY = if (dragAmount.y < 0) {
+                                        maxOf(position.y + dragAmount.y, 0f)
+                                    } else {
+                                        minOf(position.y + dragAmount.y, canvasSize.y - 100f)
+                                    }
+                                    
+                                    position = Offset(newX, newY)
+                                    
+                                    val updatedRooms = zone.rooms.map { r ->
+                                        if (r.id == room.id) {
+                                            r.copy(position = Position(newX, newY))
+                                        } else r
+                                    }
+                                    onZoneChanged(zone.copy(rooms = updatedRooms))
                                 }
-                                
-                                val newY = if (dragAmount.y < 0) {
-                                    maxOf(position.y + dragAmount.y, 0f)
-                                } else {
-                                    minOf(position.y + dragAmount.y, 4900f)
-                                }
-                                
-                                position = Offset(newX, newY)
-                                
-                                // Update the zone with new position
-                                val updatedRooms = zone.rooms.map { r ->
-                                    if (r.id == room.id) {
-                                        r.copy(position = Position(newX, newY))
-                                    } else r
-                                }
-                                onZoneChanged(zone.copy(rooms = updatedRooms))
                             }
+                    ) {
+                        Column {
+                            Text(room.name)
+                            Text(
+                                room.id,
+                                color = Color.Gray
+                            )
                         }
-                ) {
-                    Column {
-                        Text(room.name)
-                        Text(
-                            room.id,
-                            color = Color.Gray
-                        )
                     }
                 }
             }
         }
+        
+        // Add scroll bars
+        VerticalScrollbar(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            adapter = rememberScrollbarAdapter(verticalScrollState)
+        )
+        HorizontalScrollbar(
+            modifier = Modifier.align(Alignment.BottomStart),
+            adapter = rememberScrollbarAdapter(horizontalScrollState)
+        )
     }
 }
