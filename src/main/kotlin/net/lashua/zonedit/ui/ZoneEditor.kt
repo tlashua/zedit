@@ -11,10 +11,17 @@ fun ZoneEditor(
     zone: Zone,
     modifier: Modifier = Modifier
 ) {
+    var currentZone by remember { mutableStateOf(zone) }
+    
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
-            // Toolbar will go here
-            ZoneCanvas(zone = zone)
+            ZoneCanvas(
+                zone = currentZone,
+                onZoneChanged = { newZone -> 
+                    currentZone = newZone
+                },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
