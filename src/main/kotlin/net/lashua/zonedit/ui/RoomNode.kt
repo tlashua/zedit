@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -20,9 +21,6 @@ fun RoomNode(
     onPositionChanged: (Position) -> Unit,
     onClick: () -> Unit = {},
 ) {
-    var offsetX by remember { mutableFloatStateOf(room.position.x) }
-    var offsetY by remember { mutableFloatStateOf(room.position.y) }
-
     Box(
         modifier = modifier
             .border(
@@ -31,12 +29,15 @@ fun RoomNode(
             )
             .padding(8.dp)
             .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-                    onPositionChanged(Position(offsetX, offsetY))
-                }
+                detectDragGestures(
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onPositionChanged(Position(
+                            x = room.position.x + dragAmount.x,
+                            y = room.position.y + dragAmount.y
+                        ))
+                    }
+                )
             }
     ) {
         Column {
