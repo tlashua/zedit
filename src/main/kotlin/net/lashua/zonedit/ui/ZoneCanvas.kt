@@ -31,6 +31,7 @@ fun ZoneCanvas(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     var scale by remember { mutableStateOf(1f) }
+    val density = LocalDensity.current
     
     val gridSize = 20.dp
     val roomSize = 200f
@@ -64,11 +65,25 @@ fun ZoneCanvas(
         )
     }
 
-    // Calculate drag bounds - simply subtract room size from canvas size
-    val dragBounds = remember(canvasSize) {
+    // Convert canvas size to dp units
+    val canvasSizeDp = remember(canvasSize) {
         Offset(
-            canvasSize.x - roomSize,
-            canvasSize.y - roomSize
+            canvasSize.x / density.density,
+            canvasSize.y / density.density
+        )
+    }
+
+    val gridSizeInPx = with(density) { gridSize.toPx() }
+    
+    // Calculate actual number of grid lines based on canvas size
+    val gridLinesHorizontal = remember(canvasSize) { (canvasSize.x / gridSizeInPx).toInt() }
+    val gridLinesVertical = remember(canvasSize) { (canvasSize.y / gridSizeInPx).toInt() }
+
+    // Calculate drag bounds based on actual canvas size, leaving one grid square margin
+    val dragBounds = remember(canvasSize, gridSizeInPx) {
+        Offset(
+            canvasSize.x - gridSizeInPx,
+            canvasSize.y - gridSizeInPx
         )
     }
 
@@ -80,34 +95,47 @@ fun ZoneCanvas(
                 .fillMaxSize()
                 .horizontalScroll(horizontalScrollState)
                 .verticalScroll(verticalScrollState)
-                .size(canvasSize.x.dp, canvasSize.y.dp)
+                .size(canvasSizeDp.x.dp, canvasSizeDp.y.dp)
                 .border(1.dp, Color.Red)
                 .drawBehind {
                     // Draw vertical grid lines
-                    for (x in 0..(size.width / gridSize.toPx()).toInt()) {
+                    for (x in 0..gridLinesHorizontal) {
+                        val isMajorLine = x % 10 == 0
                         drawLine(
-                            color = Color.LightGray,
+                            color = if (isMajorLine) Color.Gray else Color.LightGray,
                             start = Offset(x * gridSize.toPx(), 0f),
                             end = Offset(x * gridSize.toPx(), size.height),
-                            strokeWidth = 0.5f
+                            strokeWidth = if (isMajorLine) 1f else 0.5f
                         )
                     }
                     // Draw horizontal grid lines
-                    for (y in 0..(size.height / gridSize.toPx()).toInt()) {
+                    for (y in 0..gridLinesVertical) {
+                        val isMajorLine = y % 10 == 0
                         drawLine(
-                            color = Color.LightGray,
+                            color = if (isMajorLine) Color.Gray else Color.LightGray,
                             start = Offset(0f, y * gridSize.toPx()),
                             end = Offset(size.width, y * gridSize.toPx()),
-                            strokeWidth = 0.5f
+                            strokeWidth = if (isMajorLine) 1f else 0.5f
                         )
                     }
                 }
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(0.5f, 2f)
-                    }
-                }
         ) {
+            // Add debug text at the top of the canvas
+            SelectionContainer {
+                Column {
+                    Text(
+                        "Grid lines: $gridLinesHorizontal x $gridLinesVertical",
+                        color = Color.Gray,
+                        fontSize = 10.sp
+                    )
+                    Text(
+                        "Grid size: ${gridSize.value}dp",
+                        color = Color.Gray,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+            
             for (room in zone.rooms) {
                 key(room.id) {
                     var position by remember(room.id) { 
