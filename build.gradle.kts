@@ -1,12 +1,13 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("multiplatform")
-    id("org.jetbrains.compose")
+    kotlin("jvm") version "2.1.0"
+    id("org.jetbrains.compose") version "1.7.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
     idea
 }
 
-group = "net.lashua.composedemo"
+group = "net.lashua.zonedit"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -15,30 +16,17 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
-val material3Version = "1.0.1"
-
-kotlin {
-    jvm {
-        jvmToolchain(11)
-        withJava()
-    }
-    sourceSets {
-        val jvmMain by getting {
-            dependencies {
-                implementation(compose.desktop.currentOs)
-                implementation ("androidx.compose.material3:material3:$material3Version")
-            }
-        }
-        val jvmTest by getting
-    }
+dependencies {
+    implementation(compose.desktop.currentOs)
+    implementation("org.jetbrains.compose.material3:material3:1.7.0")
 }
 
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "net.lashua.zonedit.MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "composedemo"
+            packageName = "zonedit"
             packageVersion = "1.0.0"
         }
     }
