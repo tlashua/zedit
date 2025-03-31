@@ -16,20 +16,12 @@ fun main() = application {
     logger.info("Starting Zone Editor application")
     val windowState = remember { WindowState(width = 1500.dp, height = 1000.dp) }
     
-    // Sample zone for testing
+    // Empty initial zone
     val testZone = Zone(
         id = "test-zone",
         name = "Test Zone",
         nodeWidth = 100f,
-        nodeHeight = 60f,
-        rooms = listOf(
-            Room(
-                id = "room1",
-                name = "Starting Room",
-                description = "This is where it all begins",
-                position = Position(100f, 100f)
-            )
-        )
+        nodeHeight = 60f
     )
 
     Window(
