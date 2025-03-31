@@ -340,7 +340,7 @@ private fun DrawScope.drawRoom(
     if (isSelected) {
         val connectionPointSize = 12f * density * zoomLevel
         
-        // North connection point
+        // Cardinal direction points (N,S,E,W)
         drawCircle(
             color = Color.Blue,
             radius = connectionPointSize / 2,
@@ -348,7 +348,6 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
-        // South connection point
         drawCircle(
             color = Color.Blue,
             radius = connectionPointSize / 2,
@@ -356,7 +355,6 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
-        // East connection point
         drawCircle(
             color = Color.Blue,
             radius = connectionPointSize / 2,
@@ -364,7 +362,6 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
-        // West connection point
         drawCircle(
             color = Color.Blue,
             radius = connectionPointSize / 2,
@@ -372,7 +369,8 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
-        // Up connection point (top-right corner)
+        // Corner points for UP/DOWN (all four corners)
+        // Top-right corner
         drawCircle(
             color = Color.Green,
             radius = connectionPointSize / 2,
@@ -380,11 +378,27 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
-        // Down connection point (bottom-right corner)
+        // Top-left corner
+        drawCircle(
+            color = Color.Green,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.left, rect.top),
+            style = Fill
+        )
+        
+        // Bottom-right corner
         drawCircle(
             color = Color.Green,
             radius = connectionPointSize / 2,
             center = Offset(rect.right, rect.bottom),
+            style = Fill
+        )
+        
+        // Bottom-left corner
+        drawCircle(
+            color = Color.Green,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.left, rect.bottom),
             style = Fill
         )
     }
