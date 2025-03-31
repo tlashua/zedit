@@ -65,11 +65,13 @@ fun ZoneCanvas(
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
     var lastSnapTime = 0L
+    var pushStartTime = remember { mutableStateOf(0L) }
     var lastPosition = remember { mutableStateOf<Position?>(null) }
     val snapDelay = 50L  // Keep the same delay
     val snapThreshold = 0.4f  // Slightly more generous position threshold
     val velocityThreshold = 2.5f  // Slightly more forgiving velocity threshold
     val breakFreeThreshold = 1.5f  // New: easier to break free than to initially snap
+    val breakFreeTime = 400L  // Break free after 400ms of continuous pushing
     val smoothingFactor = 0.8f    // New: helps reduce jitter (0-1, higher = smoother)
 
     LaunchedEffect(selectedRoom) {
@@ -232,12 +234,8 @@ fun ZoneCanvas(
                                 val oldPos = room.position
 
                                 // Calculate new position first without snapping
-                                val rawX =
-                                    (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
-                                val rawY = (oldPos.y + modelDragY).coerceIn(
-                                    0f,
-                                    canvasHeight.toFloat() - currentZone.nodeHeight
-                                )
+                                val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
+                                val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
 
                                 // Only snap when we're close to a grid line and enough time has passed
                                 val newPos = if (currentZone.snapToGrid) {
@@ -248,32 +246,41 @@ fun ZoneCanvas(
                                     val distanceToGridX = abs(rawX - snappedX)
                                     val distanceToGridY = abs(rawY - snappedY)
                                     
-                                    // Calculate velocity (if we have a previous position)
                                     val velocity = lastPosition.value?.let { lastPos ->
                                         val dx = abs(rawX - lastPos.x)
                                         val dy = abs(rawY - lastPos.y)
                                         maxOf(dx, dy) / currentZone.gridSize  // Convert to grid units
                                     } ?: 0f
 
-                                    // Break free if moving faster than breakFreeThreshold
-                                    if (velocity > breakFreeThreshold) {
-                                        Position(rawX, rawY)
-                                    } else {
-                                        val shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold)
-                                        val shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold)
-                                        
-                                        if (velocity < velocityThreshold && currentTime - lastSnapTime > snapDelay) {
-                                            lastSnapTime = currentTime
-                                            Position(
-                                                x = if (shouldSnapX) {
-                                                    rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
-                                                } else rawX,
-                                                y = if (shouldSnapY) {
-                                                    rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
-                                                } else rawY
-                                            )
-                                        } else {
+                                    when {
+                                        // Case 1: Pushing against grid
+                                        velocity > 0.2f && (distanceToGridX > currentZone.gridSize * 0.2f || 
+                                            distanceToGridY > currentZone.gridSize * 0.2f) -> {
+                                            if (pushStartTime.value == 0L) {
+                                                pushStartTime.value = currentTime
+                                                Position(snappedX, snappedY)  // Stay snapped initially
+                                            } else if (currentTime - pushStartTime.value > breakFreeTime) {
+                                                pushStartTime.value = 0L
+                                                Position(rawX, rawY)  // Break free
+                                            } else {
+                                                Position(snappedX, snappedY)  // Stay snapped while pushing
+                                            }
+                                        }
+                                        // Case 2: Moving fast
+                                        velocity > breakFreeThreshold -> {
+                                            pushStartTime.value = 0L
                                             Position(rawX, rawY)
+                                        }
+                                        // Case 3: Normal snapping
+                                        else -> {
+                                            pushStartTime.value = 0L
+                                            handleNormalSnapping(
+                                                rawX, rawY, velocity, currentTime, lastSnapTime,
+                                                snapDelay, velocityThreshold, snappedX, snappedY,
+                                                shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold),
+                                                shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold),
+                                                smoothingFactor = smoothingFactor
+                                            )
                                         }
                                     }
                                 } else {
@@ -281,8 +288,7 @@ fun ZoneCanvas(
                                 }
 
                                 val updatedRooms = currentZone.rooms.map { r ->
-                                    if (r.id == draggedRoomId) r.copy(position = newPos)
-                                    else r
+                                    if (r.id == draggedRoomId) r.copy(position = newPos) else r
                                 }
                                 currentZone = currentZone.copy(rooms = updatedRooms)
                                 onZoneChanged(currentZone)
@@ -701,4 +707,31 @@ private fun isNearPoint(point: Offset, target: Offset, threshold: Float): Boolea
                 (point.y - target.y) * (point.y - target.y)
     )
     return distance <= threshold
+}
+
+private fun handleNormalSnapping(
+    rawX: Float, rawY: Float, velocity: Float, 
+    currentTime: Long, lastSnapTime: Long,
+    snapDelay: Long, velocityThreshold: Float,
+    snappedX: Float, snappedY: Float,
+    shouldSnapX: Boolean, shouldSnapY: Boolean,
+    smoothingFactor: Float
+): Position {
+    val x = if (velocity < velocityThreshold && 
+               currentTime - lastSnapTime > snapDelay && 
+               shouldSnapX) {
+        rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
+    } else {
+        rawX
+    }
+    
+    val y = if (velocity < velocityThreshold && 
+               currentTime - lastSnapTime > snapDelay && 
+               shouldSnapY) {
+        rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
+    } else {
+        rawY
+    }
+    
+    return Position(x, y)
 }

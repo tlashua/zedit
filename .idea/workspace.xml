@@ -5,8 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1a5420f-0be7-43d9-8146-a0bc5356d344" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
