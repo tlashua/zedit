@@ -1,16 +1,17 @@
 package net.lashua.zonedit.ui
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import net.lashua.zonedit.model.*  // Updated to include ConnectionDragState
+import net.lashua.zonedit.model.*
 import java.util.UUID
 import androidx.compose.ui.graphics.Color
+import org.slf4j.LoggerFactory
+
+private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
 @Composable
 fun ZoneEditor(
@@ -149,15 +150,15 @@ fun ZoneEditor(
                     canvasHeight = canvasHeight,
                     selectedRoom = selectedRoom,
                     onZoneChanged = { newZone ->
-                        println("ZoneEditor - Zone updated: ${newZone.rooms.map { it.id }}")
+                        log.debug("Zone updated: {}", newZone.rooms.map { it.id })
                         currentZone = newZone
                     },
                     onRoomSelected = { room ->
-                        println("ZoneEditor - Room selection changed to: ${room?.id}")
+                        log.debug("Room selection changed to: {}", room?.id)
                         selectedRoom = room
                     },
                     onConnectionStarted = { room, direction ->
-                        println("ZoneEditor - Connection started from ${room.id} in direction $direction")
+                        log.debug("Connection started from {} in direction {}", room.id, direction)
                     },
                     modifier = Modifier.weight(1f)
                 )

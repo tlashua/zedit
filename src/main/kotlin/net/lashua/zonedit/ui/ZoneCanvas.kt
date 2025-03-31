@@ -28,6 +28,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.*
+import org.slf4j.LoggerFactory
 import java.util.*
 
 data class ConnectionDragState(
@@ -36,6 +37,8 @@ data class ConnectionDragState(
     val currentPoint: Offset,
     val sourceCorner: String // "LEFT" or "RIGHT"
 )
+
+private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneCanvas")
 
 @Composable
 fun ZoneCanvas(
@@ -62,11 +65,11 @@ fun ZoneCanvas(
 
     LaunchedEffect(selectedRoom) {
         currentSelectedRoom = selectedRoom
-        println("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
+        log.debug("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
     }
 
     LaunchedEffect(zone) {
-        println("ZoneCanvas - Zone updated: ${zone.rooms.map { it.id }}")
+        log.debug("ZoneCanvas - Zone updated: ${zone.rooms.map { it.id }}")
         currentZone = zone
     }
     
@@ -98,9 +101,9 @@ fun ZoneCanvas(
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = { offset ->
-                            println("=== Drag Start ===")
-                            println("Initial offset: $offset")
-                            println("Selected room: ${currentSelectedRoom?.id}")
+                            log.debug("=== Drag Start ===")
+                            log.debug("Initial offset: $offset")
+                            log.debug("Selected room: ${currentSelectedRoom?.id}")
                             
                             // First check if we're near any connection point of the selected room
                             if (currentSelectedRoom != null) {
@@ -140,7 +143,7 @@ fun ZoneCanvas(
                                 }
 
                                 if (direction.first != null) {
-                                    println("Starting connection drag from ${currentSelectedRoom!!.id} in direction ${direction.first}")
+                                    log.debug("Starting connection drag from ${currentSelectedRoom!!.id} in direction ${direction.first}")
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = currentSelectedRoom!!.id,
                                         direction = direction.first!!,
@@ -159,7 +162,7 @@ fun ZoneCanvas(
                             }
                             
                             if (roomToDrag != null) {
-                                println("Starting room drag: ${roomToDrag.id}")
+                                log.debug("Starting room drag: ${roomToDrag.id}")
                                 draggedRoomId = roomToDrag.id
                             }
                         },
@@ -189,9 +192,9 @@ fun ZoneCanvas(
                             }
                         },
                         onDragEnd = {
-                            println("=== Drag End ===")
-                            println("Final connection state: $connectionDragState")
-                            println("Final dragged room: $draggedRoomId")
+                            log.debug("=== Drag End ===")
+                            log.debug("Final connection state: $connectionDragState")
+                            log.debug("Final dragged room: $draggedRoomId")
                             
                             connectionDragState?.let { state ->
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
