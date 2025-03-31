@@ -6,7 +6,15 @@
   <component name="ChangeListManager">
     <list default="true" id="f1a5420f-0be7-43d9-8146-a0bc5356d344" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/Main.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/io/ZoneSerializer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/io/ZoneSerializer.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/RoomNode.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/RoomNode.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneEditor.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneEditor.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/components/ComboBox.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/components/ComboBox.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/components/GridDimensionField.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/components/GridDimensionField.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,7 +79,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;Errors&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">

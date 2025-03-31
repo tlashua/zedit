@@ -27,9 +27,11 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.lashua.zonedit.model.*
+import net.lashua.zonedit.model.ExitDirection
+import net.lashua.zonedit.model.Position
+import net.lashua.zonedit.model.Room
+import net.lashua.zonedit.model.Zone
 import org.slf4j.LoggerFactory
-import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -64,15 +66,8 @@ fun ZoneCanvas(
     var draggedRoomId by remember { mutableStateOf<String?>(null) }
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
-    var lastSnapTime = 0L
-    var pushStartTime = remember { mutableStateOf(0L) }
     var lastPosition = remember { mutableStateOf<Position?>(null) }
-    val snapDelay = 50L  // Keep the same delay
-    val snapThreshold = 0.4f  // Slightly more generous position threshold
-    val velocityThreshold = 2.5f  // Slightly more forgiving velocity threshold
-    val breakFreeThreshold = 1.5f  // New: easier to break free than to initially snap
-    val breakFreeTime = 400L  // Break free after 400ms of continuous pushing
-    val smoothingFactor = 0.8f    // New: helps reduce jitter (0-1, higher = smoother)
+
 
     LaunchedEffect(selectedRoom) {
         currentSelectedRoom = selectedRoom

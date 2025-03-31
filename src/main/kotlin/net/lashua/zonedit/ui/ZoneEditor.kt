@@ -1,15 +1,12 @@
 package net.lashua.zonedit.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.io.ZoneSerializer
 import net.lashua.zonedit.model.Position
@@ -22,8 +19,6 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
-import kotlin.math.ceil
-import kotlin.math.roundToInt
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
