@@ -1,9 +1,9 @@
 package net.lashua.zonedit.io
 
 import com.akuleshov7.ktoml.Toml
+import com.akuleshov7.ktoml.TomlIndentation
 import com.akuleshov7.ktoml.TomlInputConfig
 import com.akuleshov7.ktoml.TomlOutputConfig
-import com.akuleshov7.ktoml.writers.TomlIndentation
 import net.lashua.zonedit.model.*
 import java.io.File
 import kotlinx.serialization.Serializable

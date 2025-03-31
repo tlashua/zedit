@@ -1,8 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "2.1.0"  // Latest stable 2.1.x
-    id("org.jetbrains.compose") version "1.7.0"  // Latest compatible with Kotlin 2.1
+    kotlin("jvm") version "2.1.0"
+    id("org.jetbrains.compose") version "1.8.0-beta01"
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
     idea
@@ -21,6 +21,7 @@ kotlin {
     
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // Add any additional compiler options here
     }
 }
 
@@ -34,15 +35,10 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.compose.material3:material3:1.7.0")  // Latest compatible with Kotlin 2.1
+    implementation("org.jetbrains.compose.material3:material3:1.8.0-beta01")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
-    
-    // Update TOML dependencies to latest
-    implementation("org.jetbrains.kotlinx:ktoml-core:0.7.0")  // Latest version
-    implementation("org.jetbrains.kotlinx:ktoml-file:0.7.0")  // Latest version
-    
-    // Existing logging dependencies
+    implementation("com.akuleshov7:ktoml-core:0.5.0")  // Try this newer version
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("ch.qos.logback:logback-classic:1.4.11")
 }
@@ -50,41 +46,30 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "net.lashua.zonedit.MainKt"
-        
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "zonedit"
             packageVersion = "1.0.0"
-            
+
             windows {
                 menuGroup = "Zone Editor"
                 upgradeUuid = "5d7b8d6a-c6d8-4e45-b3f3-b4b7b3d6c8d9"
                 dirChooser = true
                 perUserInstall = true
             }
-            
+
             macOS {
                 bundleID = "net.lashua.zonedit"
             }
-            
+
             linux {
                 menuGroup = "Development"
             }
 
-            // Add ProGuard configuration
-            modules("java.sql")
-            modules("java.naming")
-            modules("jdk.unsupported")
-            
-            jvmArgs(
-                "-Dfile.encoding=UTF-8",
-                "-Djava.awt.headless=false"
-            )
+            modules("java.sql", "java.naming", "jdk.unsupported")
+
+            jvmArgs("-Dfile.encoding=UTF-8", "-Djava.awt.headless=false")
         }
     }
-}
-
-// Add ProGuard configuration
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
 }
