@@ -110,6 +110,8 @@ fun ZoneCanvas(
                                     isNearPoint(offset, southPoint, connectionPointSize) -> ExitDirection.SOUTH
                                     isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST
                                     isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) -> ExitDirection.UP
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN
                                     else -> null
                                 }
                                 
@@ -371,6 +373,22 @@ private fun DrawScope.drawRoom(
             center = Offset(rect.left, rect.center.y),
             style = Fill
         )
+        
+        // Up connection point (top-right corner)
+        drawCircle(
+            color = Color.Green,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.right, rect.top),
+            style = Fill
+        )
+        
+        // Down connection point (bottom-right corner)
+        drawCircle(
+            color = Color.Green,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.right, rect.bottom),
+            style = Fill
+        )
     }
 }
 
@@ -431,23 +449,29 @@ private fun DrawScope.drawConnections(
             ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
             ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
             ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-            ExitDirection.UP -> Offset(sourceRect.center.x, sourceRect.top)
-            ExitDirection.DOWN -> Offset(sourceRect.center.x, sourceRect.bottom)
+            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top) // Top-right corner
+            ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Bottom-right corner
         }
         
-        // Calculate the entrance point
+        // Calculate the entrance point - for UP/DOWN, use opposite corners
         val destPoint = when (exitDir) {
             ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)
             ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
             ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
             ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
-            ExitDirection.UP -> Offset(destRect.center.x, destRect.bottom)
-            ExitDirection.DOWN -> Offset(destRect.center.x, destRect.top)
+            ExitDirection.UP -> Offset(destRect.left, destRect.bottom) // Bottom-left corner
+            ExitDirection.DOWN -> Offset(destRect.left, destRect.top) // Top-left corner
+        }
+        
+        // Use different color for vertical connections
+        val connectionColor = when (exitDir) {
+            ExitDirection.UP, ExitDirection.DOWN -> Color.Green
+            else -> Color.Gray
         }
         
         // Draw the connection line
         drawLine(
-            color = Color.Gray,
+            color = connectionColor,
             start = sourcePoint,
             end = destPoint,
             strokeWidth = 2f * zoomLevel
@@ -457,23 +481,18 @@ private fun DrawScope.drawConnections(
         val isBidirectional = destRoom.exits.any { (dir, id) -> id == room.id }
         
         val arrowLength = 20f * zoomLevel
-        val arrowAngle = (kotlin.math.PI / 6).toFloat() // 30 degrees
+        val arrowAngle = (kotlin.math.PI / 6).toFloat()
         
-        // Calculate angle from source to destination
         val angle = kotlin.math.atan2(
             (destPoint.y - sourcePoint.y),
             (destPoint.x - sourcePoint.x)
         )
         
         if (isBidirectional) {
-            // Draw arrow at destination point
-            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel)
-            
-            // Draw arrow at source point (opposite direction)
-            drawArrow(sourcePoint, angle + kotlin.math.PI.toFloat(), arrowLength, arrowAngle, zoomLevel)
+            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
+            drawArrow(sourcePoint, angle + kotlin.math.PI.toFloat(), arrowLength, arrowAngle, zoomLevel, connectionColor)
         } else {
-            // Draw single arrow at destination
-            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel)
+            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
         }
     }
 }
@@ -481,27 +500,28 @@ private fun DrawScope.drawConnections(
 private fun DrawScope.drawArrow(
     point: Offset,
     angle: Float,
-    arrowLength: Float,
+    length: Float,
     arrowAngle: Float,
-    zoomLevel: Float
+    zoomLevel: Float,
+    color: Color
 ) {
     val arrowPoint1 = Offset(
-        point.x - arrowLength * kotlin.math.cos(angle - arrowAngle),
-        point.y - arrowLength * kotlin.math.sin(angle - arrowAngle)
+        point.x - length * kotlin.math.cos(angle - arrowAngle),
+        point.y - length * kotlin.math.sin(angle - arrowAngle)
     )
     val arrowPoint2 = Offset(
-        point.x - arrowLength * kotlin.math.cos(angle + arrowAngle),
-        point.y - arrowLength * kotlin.math.sin(angle + arrowAngle)
+        point.x - length * kotlin.math.cos(angle + arrowAngle),
+        point.y - length * kotlin.math.sin(angle + arrowAngle)
     )
     
     drawLine(
-        color = Color.Gray,
+        color = color,
         start = point,
         end = arrowPoint1,
         strokeWidth = 2f * zoomLevel
     )
     drawLine(
-        color = Color.Gray,
+        color = color,
         start = point,
         end = arrowPoint2,
         strokeWidth = 2f * zoomLevel
