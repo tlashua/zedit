@@ -106,21 +106,36 @@ fun ZoneCanvas(
                             if (currentSelectedRoom != null) {
                                 val roomRect = getRoomRect(currentSelectedRoom!!, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
-                                
-                                val northPoint = Offset(roomRect.center.x, roomRect.top)
-                                val southPoint = Offset(roomRect.center.x, roomRect.bottom)
-                                val eastPoint = Offset(roomRect.right, roomRect.center.y)
-                                val westPoint = Offset(roomRect.left, roomRect.center.y)
+
+                                // Check if UP or DOWN exits already exist
+                                val hasUpExit = currentSelectedRoom!!.exits.containsKey(ExitDirection.UP)
+                                val hasDownExit = currentSelectedRoom!!.exits.containsKey(ExitDirection.DOWN)
                                 
                                 val direction = when {
-                                    isNearPoint(offset, northPoint, connectionPointSize) -> ExitDirection.NORTH to null
-                                    isNearPoint(offset, southPoint, connectionPointSize) -> ExitDirection.SOUTH to null
-                                    isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST to null
-                                    isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST to null
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) -> ExitDirection.UP to "RIGHT"
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize) -> ExitDirection.UP to "LEFT"
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN to "RIGHT"
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN to "LEFT"
+                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.top), connectionPointSize) -> 
+                                        ExitDirection.NORTH to null
+                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.bottom), connectionPointSize) -> 
+                                        ExitDirection.SOUTH to null
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.center.y), connectionPointSize) -> 
+                                        ExitDirection.EAST to null
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.center.y), connectionPointSize) -> 
+                                        ExitDirection.WEST to null
+                                    // Only allow UP if no UP exit exists
+                                    !hasUpExit && (
+                                        isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) ||
+                                        isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize)
+                                    ) -> ExitDirection.UP to (
+                                        if (isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize)) 
+                                            "LEFT" else "RIGHT"
+                                    )
+                                    // Only allow DOWN if no DOWN exit exists
+                                    !hasDownExit && (
+                                        isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) ||
+                                        isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize)
+                                    ) -> ExitDirection.DOWN to (
+                                        if (isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize)) 
+                                            "LEFT" else "RIGHT"
+                                    )
                                     else -> null to null
                                 }
 
@@ -130,7 +145,7 @@ fun ZoneCanvas(
                                         sourceRoomId = currentSelectedRoom!!.id,
                                         direction = direction.first!!,
                                         currentPoint = offset,
-                                        sourceCorner = direction.second ?: "RIGHT" // Default to RIGHT for cardinal directions
+                                        sourceCorner = direction.second ?: "RIGHT"
                                     )
                                     onConnectionStarted(currentSelectedRoom!!, direction.first!!)
                                     return@detectDragGestures
@@ -383,34 +398,39 @@ private fun DrawScope.drawRoom(
             style = Fill
         )
         
+        // Check if UP/DOWN exits exist
+        val hasUpExit = room.exits.containsKey(ExitDirection.UP)
+        val hasDownExit = room.exits.containsKey(ExitDirection.DOWN)
+        
         // Corner points for UP/DOWN (all four corners)
-        // Top-right corner
+        val upColor = if (hasUpExit) Color.Gray else Color.Green
+        val downColor = if (hasDownExit) Color.Gray else Color.Green
+        
+        // Top corners (UP)
         drawCircle(
-            color = Color.Green,
+            color = upColor,
             radius = connectionPointSize / 2,
             center = Offset(rect.right, rect.top),
             style = Fill
         )
         
-        // Top-left corner
         drawCircle(
-            color = Color.Green,
+            color = upColor,
             radius = connectionPointSize / 2,
             center = Offset(rect.left, rect.top),
             style = Fill
         )
         
-        // Bottom-right corner
+        // Bottom corners (DOWN)
         drawCircle(
-            color = Color.Green,
+            color = downColor,
             radius = connectionPointSize / 2,
             center = Offset(rect.right, rect.bottom),
             style = Fill
         )
         
-        // Bottom-left corner
         drawCircle(
-            color = Color.Green,
+            color = downColor,
             radius = connectionPointSize / 2,
             center = Offset(rect.left, rect.bottom),
             style = Fill

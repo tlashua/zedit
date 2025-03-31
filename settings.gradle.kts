@@ -13,5 +13,5 @@ pluginManagement {
 }
 
 
-rootProject.name = "composedemo"
+rootProject.name = "zonedit"  // Changed from "composedemo" to "zonedit"
 
