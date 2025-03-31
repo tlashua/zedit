@@ -17,33 +17,7 @@ data class ZoneFile(
     val nodeWidth: Float = 100f,
     @SerialName("node_height.f")
     val nodeHeight: Float = 60f,
-    val rooms: List<SerializableRoom> = emptyList(),
-    @SerialName("zone_attributes")
-    val zoneAttributes: ZoneAttributes? = null,
-    val scripting: ScriptingConfig? = null
-)
-
-@Serializable
-data class ZoneAttributes(
-    @SerialName("level_range")
-    val levelRange: LevelRange? = null,
-    @SerialName("reset_time")
-    val resetTime: Int? = null,
-    val weather: Boolean? = null
-)
-
-@Serializable
-data class LevelRange(
-    val min: Int,
-    val max: Int
-)
-
-@Serializable
-data class ScriptingConfig(
-    @SerialName("on_enter")
-    val onEnter: String? = null,
-    @SerialName("on_reset")
-    val onReset: String? = null
+    val rooms: List<SerializableRoom> = emptyList()
 )
 
 @Serializable
@@ -71,7 +45,7 @@ object ZoneSerializer {
         ),
         outputConfig = TomlOutputConfig(
             indentation = TomlIndentation.TWO_SPACES,
-            ignoreNullValues = true  // Don't write null values to TOML
+            ignoreNullValues = true
         )
     )
 
