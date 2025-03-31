@@ -38,10 +38,11 @@ fun ZoneCanvas(
     val verticalScrollState = rememberScrollState()
     val density = LocalDensity.current.density
     
-    val gridSize = (20 * zoomLevel).dp
+    // Base grid size in dp (unzoomed)
+    val baseGridSize = 20.dp
+    
     val canvasMinSize = Offset(canvasWidth.toFloat(), canvasHeight.toFloat())
     
-    // Update bounds calculation to use new canvas size
     val bounds = remember(zone.rooms) {
         if (zone.rooms.isEmpty()) {
             Pair(Offset.Zero, Offset(canvasMinSize.x, canvasMinSize.y))
@@ -61,17 +62,21 @@ fun ZoneCanvas(
         }
     }
     
-    // Update canvas size calculation
+    // Calculate canvas size (unzoomed)
     val canvasSize = remember(bounds, canvasWidth, canvasHeight) {
         Offset(
-            ceil(maxOf(bounds.second.x + 100f, canvasMinSize.x) / gridSize.value) * gridSize.value,
-            ceil(maxOf(bounds.second.y + 100f, canvasMinSize.y) / gridSize.value) * gridSize.value
+            maxOf(bounds.second.x + 100f, canvasMinSize.x),
+            maxOf(bounds.second.y + 100f, canvasMinSize.y)
         )
     }
 
-    // Calculate number of grid lines - now exactly matching canvas size
-    val gridLinesHorizontal = remember(canvasSize) { (canvasSize.x / gridSize.value).toInt() }
-    val gridLinesVertical = remember(canvasSize) { (canvasSize.y / gridSize.value).toInt() }
+    // Calculate grid lines based on unzoomed size
+    val gridLinesHorizontal = remember(canvasSize) { 
+        (canvasSize.x / baseGridSize.value).toInt() 
+    }
+    val gridLinesVertical = remember(canvasSize) { 
+        (canvasSize.y / baseGridSize.value).toInt() 
+    }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -86,7 +91,7 @@ fun ZoneCanvas(
                 )
                 .border(1.dp, Color.Red)
                 .drawBehind {
-                    val gridSizePx = gridSize.toPx()
+                    val gridSizePx = (baseGridSize * zoomLevel).toPx()
                     
                     // Draw vertical grid lines
                     repeat(gridLinesHorizontal + 1) { x ->
@@ -117,23 +122,22 @@ fun ZoneCanvas(
                 Text(
                     "(0,0)",
                     color = Color.Gray,
-                    fontSize = 10.sp
+                    fontSize = (10 * zoomLevel).sp
                 )
                 Text(
-                    "Grid: ${gridSize.value}dp (${gridLinesHorizontal}x${gridLinesVertical} lines)",
+                    "Grid: ${(baseGridSize.value * zoomLevel).roundToInt()}dp (${gridLinesHorizontal}x${gridLinesVertical} lines)",
                     color = Color.Gray,
-                    fontSize = 10.sp
+                    fontSize = (10 * zoomLevel).sp
                 )
                 Text(
-                    "Canvas: ${canvasSize.x.roundToInt()}dp x ${canvasSize.y.roundToInt()}dp",
+                    "Canvas: ${(canvasSize.x * zoomLevel).roundToInt()}dp x ${(canvasSize.y * zoomLevel).roundToInt()}dp",
                     color = Color.Gray,
-                    fontSize = 10.sp
+                    fontSize = (10 * zoomLevel).sp
                 )
             }
             
             for (room in zone.rooms) {
                 key(room.id) {
-                    // Store position in dp
                     var position by remember(room.id) { 
                         mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
                     }
@@ -141,8 +145,8 @@ fun ZoneCanvas(
                     Box(
                         modifier = Modifier
                             .offset { IntOffset(
-                                ((position.x * density * zoomLevel).roundToInt()),
-                                ((position.y * density * zoomLevel).roundToInt())
+                                (position.x * zoomLevel).roundToInt(),
+                                (position.y * zoomLevel).roundToInt()
                             )}
                             .size(
                                 (100 * zoomLevel).dp,
@@ -158,9 +162,9 @@ fun ZoneCanvas(
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
-                                    val newX = (position.x + dragAmount.x / (density * zoomLevel))
+                                    val newX = (position.x + dragAmount.x / zoomLevel)
                                         .coerceIn(0f, canvasSize.x - 100f)
-                                    val newY = (position.y + dragAmount.y / (density * zoomLevel))
+                                    val newY = (position.y + dragAmount.y / zoomLevel)
                                         .coerceIn(0f, canvasSize.y - 100f)
                                     
                                     position = Offset(newX, newY)
