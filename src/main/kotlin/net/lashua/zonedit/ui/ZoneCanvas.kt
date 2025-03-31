@@ -68,7 +68,8 @@ fun ZoneCanvas(
     var lastPosition = remember { mutableStateOf<Position?>(null) }
     val snapDelay = 50L  // Keep the same delay
     val snapThreshold = 0.4f  // Slightly more generous position threshold
-    val velocityThreshold = 2f  // New: maximum speed for snapping (grid units per frame)
+    val velocityThreshold = 2.5f  // Slightly more forgiving velocity threshold
+    val smoothingFactor = 0.8f    // New: helps reduce jitter (0-1, higher = smoother)
 
     LaunchedEffect(selectedRoom) {
         currentSelectedRoom = selectedRoom
@@ -253,15 +254,20 @@ fun ZoneCanvas(
                                         maxOf(dx, dy) / currentZone.gridSize  // Convert to grid units
                                     } ?: 0f
 
+                                    // Apply smoothing to the snap decision
                                     val shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold)
                                     val shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold)
                                     
-                                    // Only snap if we're moving slowly enough and have been near the grid line
                                     if (velocity < velocityThreshold && currentTime - lastSnapTime > snapDelay) {
                                         lastSnapTime = currentTime
+                                        // Smooth transition to snapped position
                                         Position(
-                                            x = if (shouldSnapX) snappedX else rawX,
-                                            y = if (shouldSnapY) snappedY else rawY
+                                            x = if (shouldSnapX) {
+                                                rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
+                                            } else rawX,
+                                            y = if (shouldSnapY) {
+                                                rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
+                                            } else rawY
                                         )
                                     } else {
                                         Position(rawX, rawY)
