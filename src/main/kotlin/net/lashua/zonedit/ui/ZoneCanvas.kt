@@ -179,12 +179,14 @@ fun ZoneCanvas(
                                 
                                 val room = currentZone.rooms.first { it.id == draggedRoomId }
                                 val oldPos = room.position
-                                
-                                val newX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
-                                val newY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
-                                
+
+                                // Calculate new position and apply grid snapping
+                                val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
+                                val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
+                                val snappedPos = currentZone.snapPosition(Position(rawX, rawY))
+
                                 val updatedRooms = currentZone.rooms.map { r ->
-                                    if (r.id == draggedRoomId) r.copy(position = Position(x = newX, y = newY))
+                                    if (r.id == draggedRoomId) r.copy(position = snappedPos)
                                     else r
                                 }
                                 currentZone = currentZone.copy(rooms = updatedRooms)
@@ -239,14 +241,15 @@ fun ZoneCanvas(
                                         0f, 
                                         canvasHeight.toFloat() - currentZone.nodeHeight
                                     )
-                                    
-                                    // Create the new room with zone-based ID
+                                    val snappedPos = currentZone.snapPosition(Position(modelX, modelY))
+
+                                    // Create the new room with zone-based ID and snapped position
                                     val nextNum = currentZone.getNextRoomNumber()
                                     val newRoom = Room(
                                         id = "${currentZone.name.lowercase()}$nextNum",
                                         name = "New Room",
                                         description = "Description",
-                                        position = Position(modelX, modelY)
+                                        position = snappedPos
                                     )
                                     
                                     // Set up bi-directional connection

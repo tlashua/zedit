@@ -15,6 +15,7 @@ import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import java.io.File
 import androidx.compose.ui.awt.ComposeWindow
+import net.lashua.zonedit.ui.components.ComboBox
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
@@ -272,6 +273,34 @@ fun ZoneEditor(
                             label = { Text("H") }
                         )
                     }
+
+                    // Snap to Grid control
+                    Switch(
+                        checked = currentZone.snapToGrid,
+                        onCheckedChange = { snapEnabled ->
+                            currentZone = currentZone.copy(snapToGrid = snapEnabled)
+                            // If enabling snap, immediately snap all rooms to grid
+                            if (snapEnabled) {
+                                val snappedRooms = currentZone.rooms.map { room ->
+                                    room.copy(position = currentZone.snapPosition(room.position))
+                                }
+                                currentZone = currentZone.copy(rooms = snappedRooms)
+                            }
+                        }
+                    )
+                    Text("Snap to Grid")
+
+                    // Optional: Grid size control
+                    Text("Grid Size:")
+                    ComboBox(
+                        value = currentZone.gridSize.toString(),
+                        onValueChange = { newSize ->
+                            newSize.toFloatOrNull()?.let { size ->
+                                currentZone = currentZone.copy(gridSize = size)
+                            }
+                        },
+                        items = listOf("10", "20", "40")
+                    )
                 }
             }
 

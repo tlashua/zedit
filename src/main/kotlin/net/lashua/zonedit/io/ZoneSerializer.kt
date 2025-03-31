@@ -15,6 +15,10 @@ data class ZoneFile(
     val nodeWidth: Float = 100f,
     @SerialName("node_height.f")
     val nodeHeight: Float = 60f,
+    @SerialName("grid_size.f")
+    val gridSize: Float = 20f,
+    @SerialName("snap_to_grid")
+    val snapToGrid: Boolean = true,
     val rooms: List<SerializableRoom> = emptyList()
 )
 

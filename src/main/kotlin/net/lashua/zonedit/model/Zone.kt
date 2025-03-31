@@ -1,5 +1,7 @@
 package net.lashua.zonedit.model
 
+import kotlin.math.roundToInt
+
 enum class ExitDirection {
     NORTH, EAST, SOUTH, WEST, UP, DOWN
 }
@@ -10,6 +12,8 @@ data class Zone(
     val rooms: List<Room> = emptyList(),
     val nodeWidth: Float = 100f,  // Default node width in dp
     val nodeHeight: Float = 60f,  // Default node height in dp
+    val gridSize: Float = 20f,  // Default grid size
+    val snapToGrid: Boolean = true  // Default to enabled
 ) {
     // Helper function to get next available room number
     fun getNextRoomNumber(): Int {
@@ -20,6 +24,14 @@ data class Zone(
                 room.id.removePrefix("${name.lowercase()}").toIntOrNull() 
             }
             .maxOrNull()?.plus(1) ?: 0
+    }
+
+    fun snapPosition(pos: Position): Position {
+        if (!snapToGrid) return pos
+        return Position(
+            x = (pos.x / gridSize).roundToInt() * gridSize,
+            y = (pos.y / gridSize).roundToInt() * gridSize
+        )
     }
 }
 
