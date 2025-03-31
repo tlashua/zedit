@@ -70,7 +70,7 @@ fun ZoneCanvas(
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         val clickedRoom = currentZone.rooms.firstOrNull { room ->
-                            val roomRect = getRoomRect(room, density, zoomLevel)
+                            val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                             roomRect.contains(offset)
                         }
                         onRoomSelected(clickedRoom)
@@ -80,7 +80,7 @@ fun ZoneCanvas(
                     detectDragGestures(
                         onDragStart = { offset ->
                             draggedRoomId = currentZone.rooms.firstOrNull { room ->
-                                val roomRect = getRoomRect(room, density, zoomLevel)
+                                val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                                 roomRect.contains(offset)
                             }?.id
                             println("Started dragging room: $draggedRoomId")
@@ -98,16 +98,14 @@ fun ZoneCanvas(
                                 // Calculate new position with constraints
                                 val newX = (oldPos.x + modelDragX).coerceIn(
                                     0f,  // Minimum X position
-                                    canvasWidth.toFloat()  // Maximum X position
+                                    canvasWidth.toFloat() - currentZone.nodeWidth  // Maximum X position
                                 )
                                 val newY = (oldPos.y + modelDragY).coerceIn(
                                     0f,  // Minimum Y position
-                                    canvasHeight.toFloat()  // Maximum Y position
+                                    canvasHeight.toFloat() - currentZone.nodeHeight  // Maximum Y position
                                 )
                                 
                                 val newPos = Position(x = newX, y = newY)
-                                println("Room ${room.id} position changed: (${oldPos.x}, ${oldPos.y}) -> (${newPos.x}, ${newPos.y})")
-                                println("Drag amount: ($modelDragX, $modelDragY)")
                                 
                                 val updatedRooms = currentZone.rooms.map { r ->
                                     if (r.id == draggedRoomId) {
@@ -128,32 +126,34 @@ fun ZoneCanvas(
             drawGrid(baseGridSize.toPx(), zoomLevel, size)
             
             for (room in currentZone.rooms) {
-                drawRoom(room, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
+                drawRoom(room, currentZone, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
             }
         }
     }
 }
 
-private fun getRoomRect(room: Room, density: Float, zoomLevel: Float): Rect {
+private fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float): Rect {
     // Convert model coordinates to screen coordinates
     val screenX = room.position.x * density * zoomLevel
     val screenY = room.position.y * density * zoomLevel
-    val size = 100f * density * zoomLevel
+    val width = zone.nodeWidth * density * zoomLevel
+    val height = zone.nodeHeight * density * zoomLevel
     
     return Rect(
         offset = Offset(screenX, screenY),
-        size = Size(size, size)
+        size = Size(width, height)
     )
 }
 
 private fun DrawScope.drawRoom(
     room: Room,
+    zone: Zone,
     density: Float,
     zoomLevel: Float,
     isSelected: Boolean,
     textMeasurer: TextMeasurer
 ) {
-    val rect = getRoomRect(room, density, zoomLevel)
+    val rect = getRoomRect(room, zone, density, zoomLevel)
     
     drawRect(
         color = Color.White,
@@ -174,7 +174,7 @@ private fun DrawScope.drawRoom(
         color = Color.Black
     )
     
-     drawText(
+    drawText(
         textMeasurer = textMeasurer,
         text = room.name,
         topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),

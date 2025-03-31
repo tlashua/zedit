@@ -5,7 +5,7 @@ data class Zone(
     val name: String,
     val rooms: List<Room> = emptyList(),
     val nodeWidth: Float = 100f,  // Default node width in dp
-    val nodeHeight: Float = 80f   // Default node height in dp
+    val nodeHeight: Float = 60f,  // Default node height in dp
 )
 
 data class Room(

@@ -17,7 +17,7 @@ fun main() = application {
         id = "test-zone",
         name = "Test Zone",
         nodeWidth = 100f,
-        nodeHeight = 80f,
+        nodeHeight = 60f,
         rooms = listOf(
             Room(
                 id = "room1",
