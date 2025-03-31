@@ -209,3 +209,90 @@ private fun DrawScope.drawGrid(gridSizePx: Float, zoomLevel: Float, size: Size) 
         )
     }
 }
+
+// Add spatial indexing for room hit detection
+private class QuadTree<T>(private val bounds: Rect) {
+    private val maxObjects = 10
+    private val objects = mutableListOf<Pair<T, Rect>>()
+    private var subdivided = false
+    private var northwest: QuadTree<T>? = null
+    private var northeast: QuadTree<T>? = null
+    private var southwest: QuadTree<T>? = null
+    private var southeast: QuadTree<T>? = null
+
+    fun clear() {
+        objects.clear()
+        northwest = null
+        northeast = null
+        southwest = null
+        southeast = null
+        subdivided = false
+    }
+
+    fun insert(item: T, itemBounds: Rect): Boolean {
+        if (!bounds.overlaps(itemBounds)) return false
+
+        if (objects.size < maxObjects) {
+            objects.add(item to itemBounds)
+            return true
+        }
+
+        if (!subdivided) {
+            subdivide()
+        }
+
+        return northwest!!.insert(item, itemBounds) ||
+               northeast!!.insert(item, itemBounds) ||
+               southwest!!.insert(item, itemBounds) ||
+               southeast!!.insert(item, itemBounds)
+    }
+
+    fun query(point: Offset): List<T> {
+        if (!bounds.contains(point)) return emptyList()
+
+        val found = objects.filter { (_, rect) -> 
+            rect.contains(point) 
+        }.map { it.first }
+
+        if (subdivided) {
+            found += northwest!!.query(point)
+            found += northeast!!.query(point)
+            found += southwest!!.query(point)
+            found += southeast!!.query(point)
+        }
+
+        return found
+    }
+
+    private fun subdivide() {
+        val x = bounds.left
+        val y = bounds.top
+        val w = bounds.width / 2
+        val h = bounds.height / 2
+
+        northwest = QuadTree(Rect(x, y, w, h))
+        northeast = QuadTree(Rect(x + w, y, w, h))
+        southwest = QuadTree(Rect(x, y + h, w, h))
+        southeast = QuadTree(Rect(x + w, y + h, w, h))
+        
+        subdivided = true
+    }
+}
+
+// Add viewport culling
+private fun DrawScope.drawVisibleRooms(
+    rooms: List<Room>,
+    viewport: Rect,
+    zone: Zone,
+    density: Float,
+    zoomLevel: Float,
+    isSelected: Boolean,
+    textMeasurer: TextMeasurer
+) {
+    rooms.filter { room ->
+        getRoomRect(room, zone, density, zoomLevel)
+            .overlaps(viewport)
+    }.forEach { room ->
+        drawRoom(room, zone, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
+    }
+}
