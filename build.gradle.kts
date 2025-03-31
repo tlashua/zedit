@@ -31,7 +31,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
     
-    // Add logging dependencies
+    // Add TOML dependencies
+    implementation("com.akuleshov7:ktoml-core:0.5.0")
+    implementation("com.akuleshov7:ktoml-file:0.5.0")
+    
+    // Existing logging dependencies
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("ch.qos.logback:logback-classic:1.4.11")
 }
