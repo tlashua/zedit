@@ -7,9 +7,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.model.*
+import net.lashua.zonedit.io.ZoneSerializer
 import java.util.UUID
 import androidx.compose.ui.graphics.Color
 import org.slf4j.LoggerFactory
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
+import java.io.File
+import androidx.compose.ui.awt.ComposeWindow
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
@@ -26,11 +31,50 @@ fun ZoneEditor(
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
     
-    // Add this effect to update selectedRoom when rooms change
-    LaunchedEffect(currentZone) {
-        if (selectedRoom != null) {
-            // Update selected room reference if it still exists in the zone
-            selectedRoom = currentZone.rooms.find { it.id == selectedRoom?.id }
+    // File chooser state
+    var fileChooser by remember { mutableStateOf<JFileChooser?>(null) }
+    
+    // Initialize file chooser once
+    LaunchedEffect(Unit) {
+        fileChooser = JFileChooser().apply {
+            fileFilter = FileNameExtensionFilter("Zone Files (*.zone)", "zone")
+            isAcceptAllFileFilterUsed = false
+        }
+    }
+
+    // Function to handle file operations
+    fun handleFileOperation(operation: (JFileChooser) -> Int) {
+        fileChooser?.let { chooser ->
+            val window = ComposeWindow()
+            val result = operation(chooser)
+            
+            if (result == JFileChooser.APPROVE_OPTION) {
+                val file = chooser.selectedFile
+                try {
+                    when (operation) {
+                        chooser::showOpenDialog -> {
+                            currentZone = ZoneSerializer.loadZone(file)
+                            nodeWidthText = currentZone.nodeWidth.toInt().toString()
+                            nodeHeightText = currentZone.nodeHeight.toInt().toString()
+                            selectedRoom = null
+                            log.info("Loaded zone from ${file.path}")
+                        }
+                        chooser::showSaveDialog -> {
+                            // Ensure .zone extension
+                            val saveFile = if (!file.name.endsWith(".zone")) {
+                                File(file.parentFile, "${file.name}.zone")
+                            } else file
+                            
+                            ZoneSerializer.saveZone(currentZone, saveFile)
+                            log.info("Saved zone to ${saveFile.path}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    log.error("File operation failed", e)
+                    // TODO: Show error dialog
+                }
+            }
+            window.dispose()
         }
     }
     
@@ -46,6 +90,31 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // File operations
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Button(
+                            onClick = { handleFileOperation { it.showOpenDialog(null) } }
+                        ) {
+                            Text("Open")
+                        }
+                        
+                        Button(
+                            onClick = { handleFileOperation { it.showSaveDialog(null) } }
+                        ) {
+                            Text("Save")
+                        }
+                    }
+
+                    Divider(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .width(1.dp)
+                            .padding(horizontal = 8.dp)
+                    )
+
                     // Zone name input and renumber button
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
