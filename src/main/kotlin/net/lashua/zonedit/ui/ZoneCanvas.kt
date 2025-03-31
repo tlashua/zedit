@@ -138,12 +138,11 @@ fun ZoneCanvas(
 
             // Room rendering
             for (room in zone.rooms) {
-                key(room.id) {  // Make sure we're using the room.id as key
+                key(room.id) {
                     var position by remember(room.id) { 
                         mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
                     }
                     
-                    // Add debug border to see room boundaries
                     Box(
                         modifier = Modifier
                             .offset { IntOffset(
@@ -151,10 +150,9 @@ fun ZoneCanvas(
                                 ((position.y * density * zoomLevel).roundToInt())
                             )}
                             .size(
-                                (zone.nodeWidth * zoomLevel).dp,
-                                (zone.nodeHeight * zoomLevel).dp
+                                (100 * zoomLevel).dp,
+                                (100 * zoomLevel).dp
                             )
-                            .border(2.dp, Color.Red.copy(alpha = 0.5f))  // Debug border
                             .clickable { onRoomSelected(room) }
                             .border(
                                 width = if (selectedRoom?.id == room.id) 2.dp else 1.dp,
@@ -165,27 +163,34 @@ fun ZoneCanvas(
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
+                                    // Calculate new position
                                     val newX = (position.x + dragAmount.x / (density * zoomLevel))
-                                        .coerceIn(0f, (canvasSize.x / density) - zone.nodeWidth)
+                                        .coerceIn(0f, canvasSize.x / density - 100f)
                                     val newY = (position.y + dragAmount.y / (density * zoomLevel))
-                                        .coerceIn(0f, (canvasSize.y / density) - zone.nodeHeight)
+                                        .coerceIn(0f, canvasSize.y / density - 100f)
                                     
                                     position = Offset(newX, newY)
                                     
+                                    // Create a new list with the updated room
                                     val updatedRooms = zone.rooms.map { r ->
                                         if (r.id == room.id) {
                                             r.copy(position = Position(
-                                                newX * density,
-                                                newY * density
+                                                x = newX * density,
+                                                y = newY * density
                                             ))
-                                        } else r
+                                        } else {
+                                            r
+                                        }
                                     }
+                                    
+                                    println("Updating room ${room.id}. Total rooms: ${updatedRooms.size}")
+                                    println("Room positions: ${updatedRooms.map { "${it.id}: (${it.position.x}, ${it.position.y})" }}")
+                                    
                                     onZoneChanged(zone.copy(rooms = updatedRooms))
                                 }
                             }
                     ) {
                         Column {
-                            // Room name and ID at top
                             Text(
                                 room.name,
                                 fontSize = (14 * zoomLevel).sp
@@ -195,12 +200,9 @@ fun ZoneCanvas(
                                 color = Color.Gray,
                                 fontSize = (10 * zoomLevel).sp
                             )
-                            
                             Spacer(Modifier.weight(1f))
-                            
-                            // Position info at bottom
                             Text(
-                                "(${position.x.roundToInt()}, ${position.y.roundToInt()})",
+                                "(${(position.x * density).roundToInt()}, ${(position.y * density).roundToInt()})",
                                 color = Color.Gray,
                                 fontSize = (10 * zoomLevel).sp,
                                 modifier = Modifier.align(Alignment.End)

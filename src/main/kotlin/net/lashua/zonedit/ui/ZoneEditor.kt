@@ -19,6 +19,8 @@ fun ZoneEditor(
     modifier: Modifier = Modifier
 ) {
     var currentZone by remember { mutableStateOf(zone) }
+    // Add this debug statement whenever currentZone is updated
+    println("Zone updated - Room count: ${currentZone.rooms.size}, Room IDs: ${currentZone.rooms.map { it.id }}")
     var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidth.toInt().toString()) }
     var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeight.toInt().toString()) }
     var zoomLevel by remember { mutableStateOf(1f) }
