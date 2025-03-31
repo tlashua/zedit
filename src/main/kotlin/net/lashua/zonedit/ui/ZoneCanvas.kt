@@ -111,7 +111,9 @@ fun ZoneCanvas(
                                     isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST
                                     isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST
                                     isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) -> ExitDirection.UP
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize) -> ExitDirection.UP
                                     isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN
                                     else -> null
                                 }
                                 
