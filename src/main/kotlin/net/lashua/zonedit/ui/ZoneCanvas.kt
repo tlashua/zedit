@@ -32,6 +32,7 @@ import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.model.ExitDirection
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.PointerInputChange
+import net.lashua.zonedit.model.ConnectionDragState
 
 @Composable
 fun ZoneCanvas(
@@ -55,7 +56,13 @@ fun ZoneCanvas(
     var draggedRoomId by remember { mutableStateOf<String?>(null) }
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     
+    // Add effect to log state changes
+    LaunchedEffect(selectedRoom) {
+        println("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
+    }
+
     LaunchedEffect(zone) {
+        println("ZoneCanvas - Zone updated: ${zone.rooms.map { it.id }}")
         currentZone = zone
     }
     
@@ -77,46 +84,45 @@ fun ZoneCanvas(
                             val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                             roomRect.contains(offset)
                         }
+                        println("ZoneCanvas - Room clicked: ${clickedRoom?.id}")
                         onRoomSelected(clickedRoom)
                     }
                 }
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = { offset ->
+                            println("\n=== Drag Start ===")
+                            println("Drag start offset: $offset")
+                            println("Currently selected room in ZoneCanvas: ${selectedRoom?.id}")
+                            println("Available rooms: ${currentZone.rooms.map { it.id }}")
+                            
                             // Check if we're starting drag on a connection point
                             if (selectedRoom != null) {
                                 val roomRect = getRoomRect(selectedRoom, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
                                 
-                                println("Drag start at offset: $offset")
-                                println("Selected room rect: $roomRect")
-                                println("Connection point size: $connectionPointSize")
+                                // Calculate connection points
+                                val northPoint = Offset(roomRect.center.x, roomRect.top)
+                                val southPoint = Offset(roomRect.center.x, roomRect.bottom)
+                                val eastPoint = Offset(roomRect.right, roomRect.center.y)
+                                val westPoint = Offset(roomRect.left, roomRect.center.y)
+                                
+                                println("Connection points for room ${selectedRoom.id}:")
+                                println("  North: $northPoint")
+                                println("  South: $southPoint")
+                                println("  East: $eastPoint")
+                                println("  West: $westPoint")
                                 
                                 val direction = when {
-                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.top), connectionPointSize) -> {
-                                        println("Near NORTH connection point")
-                                        ExitDirection.NORTH
-                                    }
-                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.bottom), connectionPointSize) -> {
-                                        println("Near SOUTH connection point")
-                                        ExitDirection.SOUTH
-                                    }
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.center.y), connectionPointSize) -> {
-                                        println("Near EAST connection point")
-                                        ExitDirection.EAST
-                                    }
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.center.y), connectionPointSize) -> {
-                                        println("Near WEST connection point")
-                                        ExitDirection.WEST
-                                    }
-                                    else -> {
-                                        println("Not near any connection point")
-                                        null
-                                    }
+                                    isNearPoint(offset, northPoint, connectionPointSize) -> ExitDirection.NORTH
+                                    isNearPoint(offset, southPoint, connectionPointSize) -> ExitDirection.SOUTH
+                                    isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST
+                                    isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST
+                                    else -> null
                                 }
                                 
                                 if (direction != null) {
-                                    println("Starting connection drag: $direction")
+                                    println("Starting connection from ${selectedRoom.id} in direction $direction")
                                     onConnectionStarted(selectedRoom, direction)
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = selectedRoom.id,
@@ -133,10 +139,9 @@ fun ZoneCanvas(
                                 roomRect.contains(offset)
                             }
                             if (roomToDrag != null) {
+                                println("Starting room drag: ${roomToDrag.id}")
                                 draggedRoomId = roomToDrag.id
-                                if (roomToDrag.id != selectedRoom?.id) {
-                                    onRoomSelected(roomToDrag)
-                                }
+                                onRoomSelected(roomToDrag)
                             }
                         },
                         onDrag = { change, dragAmount ->
@@ -431,4 +436,11 @@ private fun isNearPoint(point: Offset, target: Offset, threshold: Float): Boolea
         (point.y - target.y) * (point.y - target.y)
     )
     return distance <= threshold
+}
+
+private fun calculateDistance(point1: Offset, point2: Offset): Float {
+    return kotlin.math.sqrt(
+        (point1.x - point2.x) * (point1.x - point2.x) +
+        (point1.y - point2.y) * (point1.y - point2.y)
+    )
 }

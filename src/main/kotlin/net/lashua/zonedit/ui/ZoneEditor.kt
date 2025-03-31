@@ -6,10 +6,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import net.lashua.zonedit.model.Zone
-import net.lashua.zonedit.model.Room
-import net.lashua.zonedit.model.Position
+import net.lashua.zonedit.model.*  // Updated to include ConnectionDragState
 import java.util.UUID
 import androidx.compose.ui.graphics.Color
 
@@ -19,12 +18,11 @@ fun ZoneEditor(
     modifier: Modifier = Modifier
 ) {
     var currentZone by remember { mutableStateOf(zone) }
-    // Add this debug statement whenever currentZone is updated
-    println("Zone updated - Room count: ${currentZone.rooms.size}, Room IDs: ${currentZone.rooms.map { it.id }}")
+    var selectedRoom by remember { mutableStateOf<Room?>(null) }
+    var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidth.toInt().toString()) }
     var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeight.toInt().toString()) }
     var zoomLevel by remember { mutableStateOf(1f) }
-    var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
     
@@ -178,13 +176,22 @@ fun ZoneEditor(
                         zoomLevel = zoomLevel,
                         canvasWidth = canvasWidth,
                         canvasHeight = canvasHeight,
+                        selectedRoom = selectedRoom,  // Make sure this is passed
                         onZoneChanged = { newZone ->
                             currentZone = newZone
                         },
                         onRoomSelected = { room ->
+                            println("Room selected in ZoneEditor: ${room?.id}")  // Add debug print
                             selectedRoom = room
                         },
-                        selectedRoom = selectedRoom
+                        onConnectionStarted = { room, direction ->
+                            println("Connection started in ZoneEditor: ${room.id}, $direction")  // Add debug print
+                            connectionDragState = ConnectionDragState(
+                                sourceRoomId = room.id,
+                                direction = direction,
+                                currentPoint = Offset.Zero
+                            )
+                        }
                     )
                 }
 
