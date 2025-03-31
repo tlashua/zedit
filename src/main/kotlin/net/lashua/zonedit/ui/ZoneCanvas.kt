@@ -265,12 +265,12 @@ fun ZoneCanvas(
                     ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
                     ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
                     ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-                    ExitDirection.UP -> Offset(sourceRect.center.x, sourceRect.top)
-                    ExitDirection.DOWN -> Offset(sourceRect.center.x, sourceRect.bottom)
+                    ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)      // Top-right corner
+                    ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Bottom-right corner
                 }
                 
                 drawLine(
-                    color = Color.Blue,
+                    color = if (state.direction in listOf(ExitDirection.UP, ExitDirection.DOWN)) Color.Green else Color.Blue,
                     start = sourcePoint,
                     end = state.currentPoint,
                     strokeWidth = 2f * zoomLevel,
@@ -427,49 +427,35 @@ private fun DrawScope.drawConnections(
     zoomLevel: Float
 ) {
     val sourceRect = getRoomRect(room, zone, density, zoomLevel)
-    val drawnConnections = mutableSetOf<Pair<String, String>>()
     
     for ((exitDir, destId) in room.exits) {
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
-        
-        // Check if we've already drawn this connection
-        val connectionPair = if (room.id < destId) 
-            Pair(room.id, destId) 
-        else 
-            Pair(destId, room.id)
-            
-        if (connectionPair in drawnConnections) continue
-        drawnConnections.add(connectionPair)
-        
         val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
         
-        // Get the exit point based on direction
+        // Get the correct source and destination points based on direction
         val sourcePoint = when (exitDir) {
             ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
             ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
             ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
             ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top) // Top-right corner
+            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)      // Top-right corner
             ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Bottom-right corner
         }
         
-        // Calculate the entrance point - for UP/DOWN, use opposite corners
         val destPoint = when (exitDir) {
             ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)
             ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
             ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
             ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
-            ExitDirection.UP -> Offset(destRect.left, destRect.bottom) // Bottom-left corner
-            ExitDirection.DOWN -> Offset(destRect.left, destRect.top) // Top-left corner
+            ExitDirection.UP -> Offset(destRect.left, destRect.bottom)    // Bottom-left corner for UP
+            ExitDirection.DOWN -> Offset(destRect.left, destRect.top)     // Top-left corner for DOWN
         }
         
-        // Use different color for vertical connections
         val connectionColor = when (exitDir) {
             ExitDirection.UP, ExitDirection.DOWN -> Color.Green
             else -> Color.Gray
         }
         
-        // Draw the connection line
         drawLine(
             color = connectionColor,
             start = sourcePoint,
@@ -477,23 +463,15 @@ private fun DrawScope.drawConnections(
             strokeWidth = 2f * zoomLevel
         )
         
-        // Check if connection is bi-directional
-        val isBidirectional = destRoom.exits.any { (dir, id) -> id == room.id }
-        
+        // Draw arrow
         val arrowLength = 20f * zoomLevel
         val arrowAngle = (kotlin.math.PI / 6).toFloat()
-        
         val angle = kotlin.math.atan2(
             (destPoint.y - sourcePoint.y),
             (destPoint.x - sourcePoint.x)
         )
         
-        if (isBidirectional) {
-            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
-            drawArrow(sourcePoint, angle + kotlin.math.PI.toFloat(), arrowLength, arrowAngle, zoomLevel, connectionColor)
-        } else {
-            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
-        }
+        drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
     }
 }
 
