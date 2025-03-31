@@ -1,5 +1,9 @@
 package net.lashua.zonedit.model
 
+enum class ExitDirection {
+    NORTH, SOUTH, EAST, WEST, UP, DOWN
+}
+
 data class Zone(
     val id: String,
     val name: String,
@@ -13,14 +17,10 @@ data class Room(
     val name: String,
     val description: String,
     val position: Position,
-    val exits: Map<Direction, String> = emptyMap(), // Maps direction to destination room ID
+    val exits: Map<ExitDirection, String> = emptyMap(), // Maps direction to destination room ID
 )
 
 data class Position(
     val x: Float,
     val y: Float,
 )
-
-enum class Direction {
-    NORTH, SOUTH, EAST, WEST, UP, DOWN
-}

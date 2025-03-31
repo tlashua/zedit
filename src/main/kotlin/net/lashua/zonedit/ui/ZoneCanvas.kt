@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.Position
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.model.ExitDirection
+import androidx.compose.ui.graphics.PathEffect
 
 @Composable
 fun ZoneCanvas(
@@ -49,6 +51,9 @@ fun ZoneCanvas(
     
     var currentZone by remember { mutableStateOf(zone) }
     var draggedRoomId by remember { mutableStateOf<String?>(null) }
+    
+    // New state for connection dragging
+    var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     
     // Update currentZone when zone changes from outside
     LaunchedEffect(zone) {
@@ -125,12 +130,33 @@ fun ZoneCanvas(
         ) {
             drawGrid(baseGridSize.toPx(), zoomLevel, size)
             
-            // Draw connections first so they appear behind rooms
+            // Draw existing connections
             for (room in currentZone.rooms) {
                 drawConnections(room, currentZone, density, zoomLevel, selectedRoom)
             }
             
-            // Draw rooms on top
+            // Draw connection preview if dragging
+            connectionDragState?.let { state ->
+                val sourceRoom = currentZone.rooms.find { it.id == state.sourceRoomId } ?: return@let
+                val sourceRect = getRoomRect(sourceRoom, currentZone, density, zoomLevel)
+                val sourcePoint = when (state.direction) {
+                    ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
+                    ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
+                    ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
+                    ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
+                    else -> sourceRect.center
+                }
+                
+                drawLine(
+                    color = Color.Blue,
+                    start = sourcePoint,
+                    end = state.currentPoint,
+                    strokeWidth = 2f * zoomLevel,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
+                )
+            }
+            
+            // Draw rooms
             for (room in currentZone.rooms) {
                 drawRoom(room, currentZone, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
             }
@@ -275,3 +301,9 @@ private fun DrawScope.drawConnections(
         )
     }
 }
+
+private data class ConnectionDragState(
+    val sourceRoomId: String,
+    val direction: ExitDirection,
+    val currentPoint: Offset
+)
