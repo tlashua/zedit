@@ -455,26 +455,33 @@ private fun DrawScope.drawRoom(
             val nameFontSize = (14 * zoomLevel).sp
             val idFontSize = (10 * zoomLevel).sp
             
+            // Measure text dimensions
+            val nameStyle = TextStyle(fontSize = nameFontSize, color = Color.Black)
+            val idStyle = TextStyle(fontSize = idFontSize, color = Color.Gray)
+            
+            val nameMeasure = textMeasurer.measure(room.name, nameStyle)
+            val idMeasure = textMeasurer.measure(room.id, idStyle)
+            
+            // Calculate vertical spacing between name and id
+            val verticalSpacing = 4f * zoomLevel
+            
             // Draw name
             drawText(
                 textMeasurer = textMeasurer,
                 text = room.name,
                 topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
-                style = TextStyle(
-                    fontSize = nameFontSize,
-                    color = Color.Black
-                )
+                style = nameStyle
             )
 
-            // Draw ID below name
+            // Draw ID below name with proper spacing
             drawText(
                 textMeasurer = textMeasurer,
                 text = room.id,
-                topLeft = rect.topLeft + Offset(8f * zoomLevel, 24f * zoomLevel),
-                style = TextStyle(
-                    fontSize = idFontSize,
-                    color = Color.Gray
-                )
+                topLeft = rect.topLeft + Offset(
+                    8f * zoomLevel,
+                    8f * zoomLevel + nameMeasure.size.height + verticalSpacing
+                ),
+                style = idStyle
             )
 
             // Draw connection points if selected
