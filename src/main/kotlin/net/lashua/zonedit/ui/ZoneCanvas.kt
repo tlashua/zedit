@@ -30,6 +30,13 @@ import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.*
 import java.util.*
 
+data class ConnectionDragState(
+    val sourceRoomId: String,
+    val direction: ExitDirection,
+    val currentPoint: Offset,
+    val sourceCorner: String // "LEFT" or "RIGHT"
+)
+
 @Composable
 fun ZoneCanvas(
     zone: Zone,
@@ -106,25 +113,26 @@ fun ZoneCanvas(
                                 val westPoint = Offset(roomRect.left, roomRect.center.y)
                                 
                                 val direction = when {
-                                    isNearPoint(offset, northPoint, connectionPointSize) -> ExitDirection.NORTH
-                                    isNearPoint(offset, southPoint, connectionPointSize) -> ExitDirection.SOUTH
-                                    isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST
-                                    isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) -> ExitDirection.UP
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize) -> ExitDirection.UP
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN
-                                    else -> null
+                                    isNearPoint(offset, northPoint, connectionPointSize) -> ExitDirection.NORTH to null
+                                    isNearPoint(offset, southPoint, connectionPointSize) -> ExitDirection.SOUTH to null
+                                    isNearPoint(offset, eastPoint, connectionPointSize) -> ExitDirection.EAST to null
+                                    isNearPoint(offset, westPoint, connectionPointSize) -> ExitDirection.WEST to null
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.top), connectionPointSize) -> ExitDirection.UP to "RIGHT"
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.top), connectionPointSize) -> ExitDirection.UP to "LEFT"
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN to "RIGHT"
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.bottom), connectionPointSize) -> ExitDirection.DOWN to "LEFT"
+                                    else -> null to null
                                 }
-                                
-                                if (direction != null) {
-                                    println("Starting connection drag from ${currentSelectedRoom!!.id} in direction $direction")
+
+                                if (direction.first != null) {
+                                    println("Starting connection drag from ${currentSelectedRoom!!.id} in direction ${direction.first}")
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = currentSelectedRoom!!.id,
-                                        direction = direction,
-                                        currentPoint = offset
+                                        direction = direction.first!!,
+                                        currentPoint = offset,
+                                        sourceCorner = direction.second ?: "RIGHT" // Default to RIGHT for cardinal directions
                                     )
-                                    onConnectionStarted(currentSelectedRoom!!, direction)
+                                    onConnectionStarted(currentSelectedRoom!!, direction.first!!)
                                     return@detectDragGestures
                                 }
                             }
@@ -265,8 +273,12 @@ fun ZoneCanvas(
                     ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
                     ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
                     ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-                    ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)      // Top-right corner
-                    ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Bottom-right corner
+                    ExitDirection.UP -> if (state.sourceCorner == "LEFT") 
+                        Offset(sourceRect.left, sourceRect.top) 
+                        else Offset(sourceRect.right, sourceRect.top)
+                    ExitDirection.DOWN -> if (state.sourceCorner == "LEFT") 
+                        Offset(sourceRect.left, sourceRect.bottom) 
+                        else Offset(sourceRect.right, sourceRect.bottom)
                 }
                 
                 drawLine(
