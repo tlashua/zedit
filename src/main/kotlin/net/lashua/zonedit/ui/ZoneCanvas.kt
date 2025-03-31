@@ -69,6 +69,7 @@ fun ZoneCanvas(
     val snapDelay = 50L  // Keep the same delay
     val snapThreshold = 0.4f  // Slightly more generous position threshold
     val velocityThreshold = 2.5f  // Slightly more forgiving velocity threshold
+    val breakFreeThreshold = 1.5f  // New: easier to break free than to initially snap
     val smoothingFactor = 0.8f    // New: helps reduce jitter (0-1, higher = smoother)
 
     LaunchedEffect(selectedRoom) {
@@ -254,23 +255,26 @@ fun ZoneCanvas(
                                         maxOf(dx, dy) / currentZone.gridSize  // Convert to grid units
                                     } ?: 0f
 
-                                    // Apply smoothing to the snap decision
-                                    val shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold)
-                                    val shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold)
-                                    
-                                    if (velocity < velocityThreshold && currentTime - lastSnapTime > snapDelay) {
-                                        lastSnapTime = currentTime
-                                        // Smooth transition to snapped position
-                                        Position(
-                                            x = if (shouldSnapX) {
-                                                rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
-                                            } else rawX,
-                                            y = if (shouldSnapY) {
-                                                rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
-                                            } else rawY
-                                        )
-                                    } else {
+                                    // Break free if moving faster than breakFreeThreshold
+                                    if (velocity > breakFreeThreshold) {
                                         Position(rawX, rawY)
+                                    } else {
+                                        val shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold)
+                                        val shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold)
+                                        
+                                        if (velocity < velocityThreshold && currentTime - lastSnapTime > snapDelay) {
+                                            lastSnapTime = currentTime
+                                            Position(
+                                                x = if (shouldSnapX) {
+                                                    rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
+                                                } else rawX,
+                                                y = if (shouldSnapY) {
+                                                    rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
+                                                } else rawY
+                                            )
+                                        } else {
+                                            Position(rawX, rawY)
+                                        }
                                     }
                                 } else {
                                     Position(rawX, rawY)
