@@ -21,7 +21,7 @@ fun ZoneEditor(
     
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
-            // Toolbar
+            //  Toolbar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp
@@ -75,6 +75,7 @@ fun ZoneEditor(
             // Canvas
             ZoneCanvas(
                 zone = currentZone,
+                zoomLevel = zoomLevel,
                 onZoneChanged = { newZone ->
                     currentZone = newZone
                 },

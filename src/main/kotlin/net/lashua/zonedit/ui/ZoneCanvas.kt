@@ -26,16 +26,16 @@ import kotlin.math.roundToInt
 @Composable
 fun ZoneCanvas(
     zone: Zone,
+    zoomLevel: Float = 1f,
     onZoneChanged: (Zone) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
-    var scale by remember { mutableStateOf(1f) }
     val density = LocalDensity.current.density
     
-    val gridSize = 20.dp
-    val canvasMinSize = 1000.dp
+    val gridSize = (20 * zoomLevel).dp
+    val canvasMinSize = (1000 * zoomLevel).dp
     
     // Calculate canvas bounds based on room positions (in dp)
     val bounds = remember(zone.rooms) {
@@ -77,10 +77,12 @@ fun ZoneCanvas(
             modifier = Modifier
                 .horizontalScroll(horizontalScrollState)
                 .verticalScroll(verticalScrollState)
-                .size(canvasSize.x.dp, canvasSize.y.dp)  // Exact canvas size
+                .size(
+                    (canvasSize.x * zoomLevel).dp,
+                    (canvasSize.y * zoomLevel).dp
+                )
                 .border(1.dp, Color.Red)
                 .drawBehind {
-                    // Only convert to px for actual drawing operations
                     val gridSizePx = gridSize.toPx()
                     
                     // Draw vertical grid lines
@@ -136,21 +138,23 @@ fun ZoneCanvas(
                     Box(
                         modifier = Modifier
                             .offset { IntOffset(
-                                (position.x * density).roundToInt(),
-                                (position.y * density).roundToInt()
+                                ((position.x * density * zoomLevel).roundToInt()),
+                                ((position.y * density * zoomLevel).roundToInt())
                             )}
-                            .size(100.dp, 100.dp)  // Changed to 100x100 dp
+                            .size(
+                                (100 * zoomLevel).dp,
+                                (100 * zoomLevel).dp
+                            )
                             .border(1.dp, Color.Black)
-                            .padding(8.dp)
+                            .padding((8 * zoomLevel).dp)
                             .pointerInput(Unit) {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
-                                    // Adjust coerceIn to account for box size
-                                    val newX = (position.x + dragAmount.x / density)
-                                        .coerceIn(0f, canvasSize.x - 100f)  // Changed to 100
-                                    val newY = (position.y + dragAmount.y / density)
-                                        .coerceIn(0f, canvasSize.y - 100f)  // Changed to 100
+                                    val newX = (position.x + dragAmount.x / (density * zoomLevel))
+                                        .coerceIn(0f, canvasSize.x - 100f)
+                                    val newY = (position.y + dragAmount.y / (density * zoomLevel))
+                                        .coerceIn(0f, canvasSize.y - 100f)
                                     
                                     position = Offset(newX, newY)
                                     
@@ -167,22 +171,15 @@ fun ZoneCanvas(
                             }
                     ) {
                         Column {
-                            Text(room.name)
-                            Text(room.id, color = Color.Gray)
-                            SelectionContainer {
-                                Column {
-                                    Text(
-                                        "x: ${position.x.roundToInt()}dp, y: ${position.y.roundToInt()}dp",
-                                        color = Color.Gray,
-                                        fontSize = 10.sp
-                                    )
-                                    Text(
-                                        "canvas: ${canvasSize.x.roundToInt()}dp x ${canvasSize.y.roundToInt()}dp",
-                                        color = Color.Gray,
-                                        fontSize = 10.sp
-                                    )
-                                }
-                            }
+                            Text(
+                                room.name,
+                                fontSize = (14 * zoomLevel).sp
+                            )
+                            Text(
+                                room.id,
+                                color = Color.Gray,
+                                fontSize = (10 * zoomLevel).sp
+                            )
                         }
                     }
                 }
