@@ -37,10 +37,7 @@ fun ZoneCanvas(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     val density = LocalDensity.current.density
-    
-    // Base grid size in dp (unzoomed)
     val baseGridSize = 20.dp
-    
     val canvasMinSize = Offset(canvasWidth.toFloat(), canvasHeight.toFloat())
     
     val bounds = remember(zone.rooms) {
@@ -62,7 +59,6 @@ fun ZoneCanvas(
         }
     }
     
-    // Calculate canvas size (unzoomed)
     val canvasSize = remember(bounds, canvasWidth, canvasHeight) {
         Offset(
             maxOf(bounds.second.x + 100f, canvasMinSize.x),
@@ -70,7 +66,6 @@ fun ZoneCanvas(
         )
     }
 
-    // Calculate grid lines based on unzoomed size
     val gridLinesHorizontal = remember(canvasSize) { 
         (canvasSize.x / baseGridSize.value).toInt() 
     }
@@ -115,43 +110,51 @@ fun ZoneCanvas(
                     }
                 }
         ) {
-            // Debug information at origin
-            Column(
-                modifier = Modifier.padding(4.dp)
+            // Single debug info display
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .background(Color.White.copy(alpha = 0.8f))
+                    .padding(4.dp)
             ) {
-                Text(
-                    "(0,0)",
-                    color = Color.Gray,
-                    fontSize = (10 * zoomLevel).sp
-                )
-                Text(
-                    "Grid: ${(baseGridSize.value * zoomLevel).roundToInt()}dp (${gridLinesHorizontal}x${gridLinesVertical} lines)",
-                    color = Color.Gray,
-                    fontSize = (10 * zoomLevel).sp
-                )
-                Text(
-                    "Canvas: ${(canvasSize.x * zoomLevel).roundToInt()}dp x ${(canvasSize.y * zoomLevel).roundToInt()}dp",
-                    color = Color.Gray,
-                    fontSize = (10 * zoomLevel).sp
-                )
+                Column {
+                    Text(
+                        "(0,0)",
+                        color = Color.Gray,
+                        fontSize = (10 * zoomLevel).sp
+                    )
+                    Text(
+                        "Rooms: ${zone.rooms.size}",
+                        color = Color.Gray,
+                        fontSize = (10 * zoomLevel).sp
+                    )
+                    Text(
+                        "Grid: ${(baseGridSize.value * zoomLevel).roundToInt()}dp",
+                        color = Color.Gray,
+                        fontSize = (10 * zoomLevel).sp
+                    )
+                }
             }
-            
+
+            // Room rendering
             for (room in zone.rooms) {
-                key(room.id) {
+                key(room.id) {  // Make sure we're using the room.id as key
                     var position by remember(room.id) { 
                         mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
                     }
                     
+                    // Add debug border to see room boundaries
                     Box(
                         modifier = Modifier
                             .offset { IntOffset(
-                                (position.x * density * zoomLevel).roundToInt(),
-                                (position.y * density * zoomLevel).roundToInt()
+                                ((position.x * density * zoomLevel).roundToInt()),
+                                ((position.y * density * zoomLevel).roundToInt())
                             )}
                             .size(
                                 (zone.nodeWidth * zoomLevel).dp,
                                 (zone.nodeHeight * zoomLevel).dp
                             )
+                            .border(2.dp, Color.Red.copy(alpha = 0.5f))  // Debug border
                             .clickable { onRoomSelected(room) }
                             .border(
                                 width = if (selectedRoom?.id == room.id) 2.dp else 1.dp,
@@ -182,6 +185,7 @@ fun ZoneCanvas(
                             }
                     ) {
                         Column {
+                            // Room name and ID at top
                             Text(
                                 room.name,
                                 fontSize = (14 * zoomLevel).sp
@@ -190,6 +194,16 @@ fun ZoneCanvas(
                                 room.id,
                                 color = Color.Gray,
                                 fontSize = (10 * zoomLevel).sp
+                            )
+                            
+                            Spacer(Modifier.weight(1f))
+                            
+                            // Position info at bottom
+                            Text(
+                                "(${position.x.roundToInt()}, ${position.y.roundToInt()})",
+                                color = Color.Gray,
+                                fontSize = (10 * zoomLevel).sp,
+                                modifier = Modifier.align(Alignment.End)
                             )
                         }
                     }
