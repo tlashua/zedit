@@ -94,15 +94,20 @@ fun ZoneCanvas(
                                 
                                 val room = currentZone.rooms.first { it.id == draggedRoomId }
                                 val oldPos = room.position
-                                val newPos = Position(
-                                    x = oldPos.x + modelDragX,
-                                    y = oldPos.y + modelDragY
+                                
+                                // Calculate new position with constraints
+                                val newX = (oldPos.x + modelDragX).coerceIn(
+                                    0f,  // Minimum X position
+                                    canvasWidth.toFloat()  // Maximum X position
+                                )
+                                val newY = (oldPos.y + modelDragY).coerceIn(
+                                    0f,  // Minimum Y position
+                                    canvasHeight.toFloat()  // Maximum Y position
                                 )
                                 
-                                println("Room ${room.id} position update:")
-                                println("  Old position: (${oldPos.x}, ${oldPos.y})")
-                                println("  Drag amount: ($modelDragX, $modelDragY)")
-                                println("  New position: (${newPos.x}, ${newPos.y})")
+                                val newPos = Position(x = newX, y = newY)
+                                println("Room ${room.id} position changed: (${oldPos.x}, ${oldPos.y}) -> (${newPos.x}, ${newPos.y})")
+                                println("Drag amount: ($modelDragX, $modelDragY)")
                                 
                                 val updatedRooms = currentZone.rooms.map { r ->
                                     if (r.id == draggedRoomId) {
