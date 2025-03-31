@@ -69,7 +69,7 @@ fun ZoneEditor(
                         onClick = {
                             val nextNum = currentZone.getNextRoomNumber()
                             val newRoom = Room(
-                                id = "${currentZone.name.lowercase()}$nextNum",  // Use zone-based ID format
+                                id = RoomUtils.generateRoomId(currentZone, nextNum),
                                 name = "New Room",
                                 description = "Description",
                                 position = Position(100f, 100f)
