@@ -3,19 +3,21 @@ package net.lashua.zonedit.io
 import com.akuleshov7.ktoml.Toml
 import com.akuleshov7.ktoml.TomlInputConfig
 import com.akuleshov7.ktoml.TomlOutputConfig
+import com.akuleshov7.ktoml.writers.TomlIndentation
 import net.lashua.zonedit.model.*
 import java.io.File
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class ZoneFile(
     val name: String,
     val id: String,
-    val nodeWidth: Float = 100f,  // Changed from node_width
-    val nodeHeight: Float = 60f,   // Changed from node_height
-    val rooms: List<SerializableRoom> = emptyList(),
-    val zoneAttributes: Map<String, String> = emptyMap(),  // Changed from zone_attributes
-    val scripting: Map<String, String> = emptyMap()
+    @SerialName("node_width.f")
+    val nodeWidth: Float = 100f,
+    @SerialName("node_height.f")
+    val nodeHeight: Float = 60f,
+    val rooms: List<SerializableRoom> = emptyList()
 )
 
 @Serializable
@@ -37,12 +39,12 @@ data class SerializablePosition(
 object ZoneSerializer {
     private val toml = Toml(
         inputConfig = TomlInputConfig(
-            ignoreUnknownNames = true, // For forward compatibility
+            ignoreUnknownNames = true,
             allowEmptyValues = true,
             allowNullValues = true
         ),
         outputConfig = TomlOutputConfig(
-            indentation = "  " // Using 2 spaces for cleaner output
+            indentation = TomlIndentation.TWO_SPACES
         )
     )
 
@@ -60,7 +62,8 @@ object ZoneSerializer {
                     position = SerializablePosition(room.position.x, room.position.y),
                     exits = room.exits.entries.associate { (direction, destId) -> 
                         direction.name.lowercase() to destId 
-                    }
+                    },
+                    flags = room.flags
                 )
             }
         )
@@ -84,8 +87,9 @@ object ZoneSerializer {
                     description = room.description,
                     position = Position(room.position.x, room.position.y),
                     exits = room.exits.entries.associate { (direction, destId) -> 
-                        ExitDirection.valueOf(direction.uppercase()) to destId
-                    }
+                        ExitDirection.valueOf(direction.uppercase()) to destId 
+                    },
+                    flags = room.flags
                 )
             }
         )

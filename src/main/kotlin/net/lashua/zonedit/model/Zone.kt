@@ -39,7 +39,8 @@ data class Room(
     val name: String,
     val description: String,
     val position: Position,
-    val exits: Map<ExitDirection, String> = emptyMap(), // Maps direction to destination room ID
+    val exits: Map<ExitDirection, String> = emptyMap(),
+    val flags: List<String> = emptyList()
 )
 
 data class Position(

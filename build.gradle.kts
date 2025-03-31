@@ -1,8 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "2.1.0"
-    id("org.jetbrains.compose") version "1.7.0"
+    kotlin("jvm") version "2.1.0"  // Latest stable 2.1.x
+    id("org.jetbrains.compose") version "1.7.0"  // Latest compatible with Kotlin 2.1
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
     idea
@@ -18,23 +18,29 @@ java {
 
 kotlin {
     jvmToolchain(17)
+    
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 repositories {
     google()
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+    maven("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
 }
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.compose.material3:material3:1.7.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
+    implementation("org.jetbrains.compose.material3:material3:1.7.0")  // Latest compatible with Kotlin 2.1
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
     
-    // Add TOML dependencies
-    implementation("com.akuleshov7:ktoml-core:0.5.0")
-    implementation("com.akuleshov7:ktoml-file:0.5.0")
+    // Update TOML dependencies to latest
+    implementation("org.jetbrains.kotlinx:ktoml-core:0.7.0")  // Latest version
+    implementation("org.jetbrains.kotlinx:ktoml-file:0.7.0")  // Latest version
     
     // Existing logging dependencies
     implementation("org.slf4j:slf4j-api:2.0.9")
