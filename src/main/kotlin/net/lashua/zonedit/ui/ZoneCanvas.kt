@@ -183,8 +183,8 @@ fun ZoneCanvas(
                                         }
                                     }
                                     
-                                    println("Updating room ${room.id}. Total rooms: ${updatedRooms.size}")
-                                    println("Room positions: ${updatedRooms.map { "${it.id}: (${it.position.x}, ${it.position.y})" }}")
+                                    println("Updating room ${room.id}. Current rooms: ${zone.rooms.map { it.id }}")
+                                    println("Updated rooms: ${updatedRooms.map { it.id }}")
                                     
                                     onZoneChanged(zone.copy(rooms = updatedRooms))
                                 }
