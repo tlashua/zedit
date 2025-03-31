@@ -237,55 +237,28 @@ fun ZoneCanvas(
                                 val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
                                 val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
 
-                                // Only snap when we're close to a grid line and enough time has passed
+                                // Only snap when we're close to a grid line
                                 val newPos = if (currentZone.snapToGrid) {
-                                    val currentTime = System.currentTimeMillis()
                                     val snappedX = (rawX / currentZone.gridSize).roundToInt() * currentZone.gridSize
                                     val snappedY = (rawY / currentZone.gridSize).roundToInt() * currentZone.gridSize
                                     
+                                    // Calculate how far we are from grid lines
                                     val distanceToGridX = abs(rawX - snappedX)
                                     val distanceToGridY = abs(rawY - snappedY)
                                     
-                                    val velocity = lastPosition.value?.let { lastPos ->
-                                        val dx = abs(rawX - lastPos.x)
-                                        val dy = abs(rawY - lastPos.y)
-                                        maxOf(dx, dy) / currentZone.gridSize  // Convert to grid units
-                                    } ?: 0f
-
-                                    when {
-                                        // Case 1: Pushing against grid
-                                        velocity > 0.2f && (distanceToGridX > currentZone.gridSize * 0.2f || 
-                                            distanceToGridY > currentZone.gridSize * 0.2f) -> {
-                                            if (pushStartTime.value == 0L) {
-                                                pushStartTime.value = currentTime
-                                                Position(snappedX, snappedY)  // Stay snapped initially
-                                            } else if (currentTime - pushStartTime.value > breakFreeTime) {
-                                                pushStartTime.value = 0L
-                                                Position(rawX, rawY)  // Break free
-                                            } else {
-                                                Position(snappedX, snappedY)  // Stay snapped while pushing
-                                            }
-                                        }
-                                        // Case 2: Moving fast
-                                        velocity > breakFreeThreshold -> {
-                                            pushStartTime.value = 0L
-                                            Position(rawX, rawY)
-                                        }
-                                        // Case 3: Normal snapping
-                                        else -> {
-                                            pushStartTime.value = 0L
-                                            handleNormalSnapping(
-                                                rawX, rawY, velocity, currentTime, lastSnapTime,
-                                                snapDelay, velocityThreshold, snappedX, snappedY,
-                                                shouldSnapX = distanceToGridX < (currentZone.gridSize * snapThreshold),
-                                                shouldSnapY = distanceToGridY < (currentZone.gridSize * snapThreshold),
-                                                smoothingFactor = smoothingFactor
-                                            )
-                                        }
-                                    }
+                                    // Snap only when very close to grid lines (15% of grid size)
+                                    // This makes it much easier to break free
+                                    val snapThreshold = currentZone.gridSize * 0.15f
+                                    
+                                    Position(
+                                        x = if (distanceToGridX < snapThreshold) snappedX else rawX,
+                                        y = if (distanceToGridY < snapThreshold) snappedY else rawY
+                                    )
                                 } else {
                                     Position(rawX, rawY)
                                 }
+
+                                lastPosition.value = Position(rawX, rawY)
 
                                 val updatedRooms = currentZone.rooms.map { r ->
                                     if (r.id == draggedRoomId) r.copy(position = newPos) else r
