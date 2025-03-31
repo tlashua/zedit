@@ -46,10 +46,30 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Zone name input - ADD THIS FIRST
+                    OutlinedTextField(
+                        value = currentZone.name,
+                        onValueChange = { newName ->
+                            currentZone = currentZone.copy(name = newName.take(20))
+                        },
+                        modifier = Modifier.width(200.dp),
+                        label = { Text("Zone Name") },
+                        singleLine = true
+                    )
+                    
+                    Divider(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .width(1.dp)
+                            .padding(horizontal = 8.dp)
+                    )
+
+                    // Existing buttons start here
                     Button(
                         onClick = {
+                            val nextNum = currentZone.getNextRoomNumber()
                             val newRoom = Room(
-                                id = UUID.randomUUID().toString(),
+                                id = "${currentZone.name.lowercase()}$nextNum",
                                 name = "New Room",
                                 description = "Description",
                                 position = Position(100f, 100f)
@@ -57,6 +77,7 @@ fun ZoneEditor(
                             currentZone = currentZone.copy(
                                 rooms = currentZone.rooms + newRoom
                             )
+                            log.debug("Created new room with ID: ${newRoom.id}")
                         }
                     ) {
                         Text("Add Room")

@@ -10,7 +10,18 @@ data class Zone(
     val rooms: List<Room> = emptyList(),
     val nodeWidth: Float = 100f,  // Default node width in dp
     val nodeHeight: Float = 60f,  // Default node height in dp
-)
+) {
+    // Helper function to get next available room number
+    fun getNextRoomNumber(): Int {
+        if (rooms.isEmpty()) return 0
+        
+        return rooms
+            .mapNotNull { room -> 
+                room.id.removePrefix("${name.lowercase()}").toIntOrNull() 
+            }
+            .maxOrNull()?.plus(1) ?: 0
+    }
+}
 
 // I don't know that strings are a good idea here.  At one point we may
 // need an identifier object.
