@@ -28,6 +28,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.*
+import java.util.*
 
 @Composable
 fun ZoneCanvas(
@@ -173,10 +174,9 @@ fun ZoneCanvas(
                                     println("Checking room ${room.id}: contains=${contains}")
                                     contains && room.id != state.sourceRoomId
                                 }
-                                println("Target room found: ${targetRoom?.id}")
                                 
                                 if (targetRoom != null) {
-                                    // Get the opposite direction for the return connection
+                                    // Existing logic for connecting to an existing room
                                     val oppositeDirection = when (state.direction) {
                                         ExitDirection.NORTH -> ExitDirection.SOUTH
                                         ExitDirection.SOUTH -> ExitDirection.NORTH
@@ -198,8 +198,47 @@ fun ZoneCanvas(
                                         }
                                     }
                                     currentZone = currentZone.copy(rooms = updatedRooms)
-                                    onZoneChanged(currentZone)
+                                } else {
+                                    // Create new room at drop location
+                                    val sourceRoom = currentZone.rooms.find { it.id == state.sourceRoomId }!!
+                                    
+                                    // Convert screen coordinates back to model coordinates
+                                    val modelX = (state.currentPoint.x / (density * zoomLevel)).coerceIn(
+                                        0f, 
+                                        canvasWidth.toFloat() - currentZone.nodeWidth
+                                    )
+                                    val modelY = (state.currentPoint.y / (density * zoomLevel)).coerceIn(
+                                        0f, 
+                                        canvasHeight.toFloat() - currentZone.nodeHeight
+                                    )
+                                    
+                                    // Create the new room
+                                    val newRoom = Room(
+                                        id = UUID.randomUUID().toString(),
+                                        name = "New Room",
+                                        description = "Description",
+                                        position = Position(modelX, modelY)
+                                    )
+                                    
+                                    // Set up bi-directional connection
+                                    val oppositeDirection = when (state.direction) {
+                                        ExitDirection.NORTH -> ExitDirection.SOUTH
+                                        ExitDirection.SOUTH -> ExitDirection.NORTH
+                                        ExitDirection.EAST -> ExitDirection.WEST
+                                        ExitDirection.WEST -> ExitDirection.EAST
+                                        ExitDirection.UP -> ExitDirection.DOWN
+                                        ExitDirection.DOWN -> ExitDirection.UP
+                                    }
+                                    
+                                    val updatedRooms = currentZone.rooms.map { room ->
+                                        if (room.id == state.sourceRoomId) {
+                                            room.copy(exits = room.exits + (state.direction to newRoom.id))
+                                        } else room
+                                    } + newRoom.copy(exits = mapOf(oppositeDirection to state.sourceRoomId))
+                                    
+                                    currentZone = currentZone.copy(rooms = updatedRooms)
                                 }
+                                onZoneChanged(currentZone)
                             }
                             
                             connectionDragState = null
@@ -370,8 +409,6 @@ private fun DrawScope.drawConnections(
     zoomLevel: Float
 ) {
     val sourceRect = getRoomRect(room, zone, density, zoomLevel)
-    
-    // Keep track of drawn connections to avoid duplicates
     val drawnConnections = mutableSetOf<Pair<String, String>>()
     
     for ((exitDir, destId) in room.exits) {
@@ -419,24 +456,21 @@ private fun DrawScope.drawConnections(
         // Check if connection is bi-directional
         val isBidirectional = destRoom.exits.any { (dir, id) -> id == room.id }
         
-        // Draw arrows
         val arrowLength = 20f * zoomLevel
+        val arrowAngle = (kotlin.math.PI / 6).toFloat() // 30 degrees
+        
+        // Calculate angle from source to destination
         val angle = kotlin.math.atan2(
             (destPoint.y - sourcePoint.y),
             (destPoint.x - sourcePoint.x)
         )
-        val arrowAngle = (kotlin.math.PI / 6).toFloat() // 30 degrees
         
         if (isBidirectional) {
-            // Draw double arrows in the middle of the line
-            val midPoint = Offset(
-                (sourcePoint.x + destPoint.x) / 2,
-                (sourcePoint.y + destPoint.y) / 2
-            )
+            // Draw arrow at destination point
+            drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel)
             
-            // Draw arrows in both directions
-            drawArrow(midPoint, angle, arrowLength, arrowAngle, zoomLevel)
-            drawArrow(midPoint, angle + kotlin.math.PI.toFloat(), arrowLength, arrowAngle, zoomLevel)
+            // Draw arrow at source point (opposite direction)
+            drawArrow(sourcePoint, angle + kotlin.math.PI.toFloat(), arrowLength, arrowAngle, zoomLevel)
         } else {
             // Draw single arrow at destination
             drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel)
