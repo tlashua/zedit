@@ -1,12 +1,15 @@
 package net.lashua.zonedit.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.io.ZoneSerializer
 import net.lashua.zonedit.model.Position
@@ -14,10 +17,13 @@ import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.RoomUtils
 import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.ui.components.ComboBox
+import net.lashua.zonedit.ui.components.GridDimensionField
 import org.slf4j.LoggerFactory
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
@@ -204,23 +210,28 @@ fun ZoneEditor(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text("Canvas:")
-                        OutlinedTextField(
-                            value = canvasWidth.toString(),
-                            onValueChange = {
-                                canvasWidth = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasWidth
+                        Text("Canvas Size:")
+                        var widthGrids by remember { mutableStateOf((canvasWidth / currentZone.gridSize).toInt()) }
+                        var heightGrids by remember { mutableStateOf((canvasHeight / currentZone.gridSize).toInt()) }
+
+                        GridDimensionField(
+                            gridCount = widthGrids,
+                            onGridCountChange = { gridCount ->
+                                widthGrids = gridCount
+                                canvasWidth = (gridCount * currentZone.gridSize).toInt()
                             },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true
+                            modifier = Modifier.width(120.dp),
+                            minGrids = 1  // Allow any positive number
                         )
                         Text("×")
-                        OutlinedTextField(
-                            value = canvasHeight.toString(),
-                            onValueChange = {
-                                canvasHeight = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasHeight
+                        GridDimensionField(
+                            gridCount = heightGrids,
+                            onGridCountChange = { gridCount ->
+                                heightGrids = gridCount
+                                canvasHeight = (gridCount * currentZone.gridSize).toInt()
                             },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true
+                            modifier = Modifier.width(120.dp),
+                            minGrids = 1  // Allow any positive number
                         )
                     }
 

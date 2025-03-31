@@ -428,6 +428,9 @@ private fun DrawScope.drawRoom(
     textMeasurer: TextMeasurer
 ) {
     val rect = getRoomRect(room, zone, density, zoomLevel)
+    
+    // Only attempt to draw if the room has positive dimensions
+    if (rect.width <= 0 || rect.height <= 0) return
 
     // Draw room background
     drawRect(
@@ -445,103 +448,109 @@ private fun DrawScope.drawRoom(
         style = Stroke(width = if (isSelected) 2f else 1f)
     )
 
-    // Draw room name
-    val nameStyle = TextStyle(
-        fontSize = (14 * zoomLevel).sp,
-        color = Color.Black
-    )
+    // Only attempt to draw text if there's enough space
+    if (rect.width >= 10 && rect.height >= 10) {  // Minimum size threshold for text
+        try {
+            // Create base font sizes
+            val nameFontSize = (14 * zoomLevel).sp
+            val idFontSize = (10 * zoomLevel).sp
+            
+            // Draw name
+            drawText(
+                textMeasurer = textMeasurer,
+                text = room.name,
+                topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
+                style = TextStyle(
+                    fontSize = nameFontSize,
+                    color = Color.Black
+                )
+            )
 
-    val idStyle = TextStyle(
-        fontSize = (10 * zoomLevel).sp,
-        color = Color.Gray
-    )
+            // Draw ID below name
+            drawText(
+                textMeasurer = textMeasurer,
+                text = room.id,
+                topLeft = rect.topLeft + Offset(8f * zoomLevel, 24f * zoomLevel),
+                style = TextStyle(
+                    fontSize = idFontSize,
+                    color = Color.Gray
+                )
+            )
 
-    // Draw name
-    drawText(
-        textMeasurer = textMeasurer,
-        text = room.name,
-        topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
-        style = nameStyle
-    )
+            // Draw connection points if selected
+            if (isSelected) {
+                val connectionPointSize = 12f * density * zoomLevel
 
-    // Draw ID below name
-    drawText(
-        textMeasurer = textMeasurer,
-        text = room.id,
-        topLeft = rect.topLeft + Offset(8f * zoomLevel, 24f * zoomLevel),
-        style = idStyle
-    )
+                // Cardinal direction points (N,S,E,W)
+                drawCircle(
+                    color = Color.Blue,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.center.x, rect.top),
+                    style = Fill
+                )
 
-    // Draw connection points if selected
-    if (isSelected) {
-        val connectionPointSize = 12f * density * zoomLevel
+                drawCircle(
+                    color = Color.Blue,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.center.x, rect.bottom),
+                    style = Fill
+                )
 
-        // Cardinal direction points (N,S,E,W)
-        drawCircle(
-            color = Color.Blue,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.center.x, rect.top),
-            style = Fill
-        )
+                drawCircle(
+                    color = Color.Blue,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.right, rect.center.y),
+                    style = Fill
+                )
 
-        drawCircle(
-            color = Color.Blue,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.center.x, rect.bottom),
-            style = Fill
-        )
+                drawCircle(
+                    color = Color.Blue,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.left, rect.center.y),
+                    style = Fill
+                )
 
-        drawCircle(
-            color = Color.Blue,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.right, rect.center.y),
-            style = Fill
-        )
+                // Check if UP/DOWN exits exist
+                val hasUpExit = room.exits.containsKey(ExitDirection.UP)
+                val hasDownExit = room.exits.containsKey(ExitDirection.DOWN)
 
-        drawCircle(
-            color = Color.Blue,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.left, rect.center.y),
-            style = Fill
-        )
+                // Corner points for UP/DOWN (all four corners)
+                val upColor = if (hasUpExit) Color.Gray else Color.Green
+                val downColor = if (hasDownExit) Color.Gray else Color.Green
 
-        // Check if UP/DOWN exits exist
-        val hasUpExit = room.exits.containsKey(ExitDirection.UP)
-        val hasDownExit = room.exits.containsKey(ExitDirection.DOWN)
+                // Top corners (UP)
+                drawCircle(
+                    color = upColor,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.right, rect.top),
+                    style = Fill
+                )
 
-        // Corner points for UP/DOWN (all four corners)
-        val upColor = if (hasUpExit) Color.Gray else Color.Green
-        val downColor = if (hasDownExit) Color.Gray else Color.Green
+                drawCircle(
+                    color = upColor,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.left, rect.top),
+                    style = Fill
+                )
 
-        // Top corners (UP)
-        drawCircle(
-            color = upColor,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.right, rect.top),
-            style = Fill
-        )
+                // Bottom corners (DOWN)
+                drawCircle(
+                    color = downColor,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.right, rect.bottom),
+                    style = Fill
+                )
 
-        drawCircle(
-            color = upColor,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.left, rect.top),
-            style = Fill
-        )
-
-        // Bottom corners (DOWN)
-        drawCircle(
-            color = downColor,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.right, rect.bottom),
-            style = Fill
-        )
-
-        drawCircle(
-            color = downColor,
-            radius = connectionPointSize / 2,
-            center = Offset(rect.left, rect.bottom),
-            style = Fill
-        )
+                drawCircle(
+                    color = downColor,
+                    radius = connectionPointSize / 2,
+                    center = Offset(rect.left, rect.bottom),
+                    style = Fill
+                )
+            }
+        } catch (e: IllegalArgumentException) {
+            log.trace("Skipping text draw for room ${room.id} due to size constraints")
+        }
     }
 }
 
