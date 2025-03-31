@@ -31,61 +31,42 @@ fun ZoneCanvas(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     var scale by remember { mutableStateOf(1f) }
-    val density = LocalDensity.current
+    val density = LocalDensity.current.density
     
     val gridSize = 20.dp
-    val roomSize = 200f
-    val canvasMinSize = 10000f
+    val canvasMinSize = 1000.dp
     
-    // Calculate canvas bounds based on room positions
+    // Calculate canvas bounds based on room positions (in dp)
     val bounds = remember(zone.rooms) {
         if (zone.rooms.isEmpty()) {
-            Pair(Offset.Zero, Offset(canvasMinSize, canvasMinSize))
+            Pair(Offset.Zero, Offset(canvasMinSize.value, canvasMinSize.value))
         } else {
             zone.rooms.fold(Pair(Offset.Zero, Offset.Zero)) { acc, room ->
                 Pair(
                     Offset(
-                        minOf(acc.first.x, room.position.x),
-                        minOf(acc.first.y, room.position.y)
+                        minOf(acc.first.x, room.position.x / density),
+                        minOf(acc.first.y, room.position.y / density)
                     ),
                     Offset(
-                        maxOf(acc.second.x, room.position.x),
-                        maxOf(acc.second.y, room.position.y)
+                        maxOf(acc.second.x, room.position.x / density),
+                        maxOf(acc.second.y, room.position.y / density)
                     )
                 )
             }
         }
     }
     
-    // Add padding to bounds and ensure minimum size
+    // Add padding and ensure minimum size (in dp)
     val canvasSize = remember(bounds) {
         Offset(
-            maxOf(bounds.second.x + 2000f, canvasMinSize),
-            maxOf(bounds.second.y + 2000f, canvasMinSize)
+            maxOf(bounds.second.x + 100f, canvasMinSize.value),
+            maxOf(bounds.second.y + 100f, canvasMinSize.value)
         )
     }
 
-    // Convert canvas size to dp units
-    val canvasSizeDp = remember(canvasSize) {
-        Offset(
-            canvasSize.x / density.density,
-            canvasSize.y / density.density
-        )
-    }
-
-    val gridSizeInPx = with(density) { gridSize.toPx() }
-    
-    // Calculate actual number of grid lines based on canvas size
-    val gridLinesHorizontal = remember(canvasSize) { (canvasSize.x / gridSizeInPx).toInt() }
-    val gridLinesVertical = remember(canvasSize) { (canvasSize.y / gridSizeInPx).toInt() }
-
-    // Calculate drag bounds based on actual canvas size, leaving one grid square margin
-    val dragBounds = remember(canvasSize, gridSizeInPx) {
-        Offset(
-            canvasSize.x - gridSizeInPx,
-            canvasSize.y - gridSizeInPx
-        )
-    }
+    // Calculate number of grid lines based on canvas size in dp
+    val gridLinesHorizontal = remember(canvasSize) { (canvasSize.x / gridSize.value).toInt() }
+    val gridLinesVertical = remember(canvasSize) { (canvasSize.y / gridSize.value).toInt() }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -95,16 +76,19 @@ fun ZoneCanvas(
                 .fillMaxSize()
                 .horizontalScroll(horizontalScrollState)
                 .verticalScroll(verticalScrollState)
-                .size(canvasSizeDp.x.dp, canvasSizeDp.y.dp)
+                .size(canvasSize.x.dp, canvasSize.y.dp)
                 .border(1.dp, Color.Red)
                 .drawBehind {
+                    // Only convert to px for actual drawing operations
+                    val gridSizePx = gridSize.toPx()
+                    
                     // Draw vertical grid lines
                     for (x in 0..gridLinesHorizontal) {
                         val isMajorLine = x % 10 == 0
                         drawLine(
                             color = if (isMajorLine) Color.Gray else Color.LightGray,
-                            start = Offset(x * gridSize.toPx(), 0f),
-                            end = Offset(x * gridSize.toPx(), size.height),
+                            start = Offset(x * gridSizePx, 0f),
+                            end = Offset(x * gridSizePx, size.height),
                             strokeWidth = if (isMajorLine) 1f else 0.5f
                         )
                     }
@@ -113,52 +97,66 @@ fun ZoneCanvas(
                         val isMajorLine = y % 10 == 0
                         drawLine(
                             color = if (isMajorLine) Color.Gray else Color.LightGray,
-                            start = Offset(0f, y * gridSize.toPx()),
-                            end = Offset(size.width, y * gridSize.toPx()),
+                            start = Offset(0f, y * gridSizePx),
+                            end = Offset(size.width, y * gridSizePx),
                             strokeWidth = if (isMajorLine) 1f else 0.5f
                         )
                     }
                 }
         ) {
-            // Add debug text at the top of the canvas
-            SelectionContainer {
-                Column {
-                    Text(
-                        "Grid lines: $gridLinesHorizontal x $gridLinesVertical",
-                        color = Color.Gray,
-                        fontSize = 10.sp
-                    )
-                    Text(
-                        "Grid size: ${gridSize.value}dp",
-                        color = Color.Gray,
-                        fontSize = 10.sp
-                    )
-                }
+            // Debug information at origin
+            Column(
+                modifier = Modifier.padding(4.dp)
+            ) {
+                Text(
+                    "(0,0)",
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
+                Text(
+                    "Grid: ${gridSize.value}dp (${gridLinesHorizontal}x${gridLinesVertical} lines)",
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
+                Text(
+                    "Canvas: ${canvasSize.x.roundToInt()}dp x ${canvasSize.y.roundToInt()}dp",
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
             }
             
             for (room in zone.rooms) {
                 key(room.id) {
+                    // Store position in dp
                     var position by remember(room.id) { 
-                        mutableStateOf(Offset(room.position.x, room.position.y)) 
+                        mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
                     }
                     
                     Box(
                         modifier = Modifier
-                            .offset { IntOffset(position.x.roundToInt(), position.y.roundToInt()) }
+                            .offset { IntOffset(
+                                (position.x * density).roundToInt(),
+                                (position.y * density).roundToInt()
+                            )}
                             .border(1.dp, Color.Black)
                             .padding(8.dp)
                             .pointerInput(Unit) {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
-                                    val newX = (position.x + dragAmount.x).coerceIn(0f, dragBounds.x)
-                                    val newY = (position.y + dragAmount.y).coerceIn(0f, dragBounds.y)
+                                    val newX = (position.x + dragAmount.x / density)
+                                        .coerceIn(0f, canvasSize.x - gridSize.value)
+                                    val newY = (position.y + dragAmount.y / density)
+                                        .coerceIn(0f, canvasSize.y - gridSize.value)
                                     
                                     position = Offset(newX, newY)
                                     
                                     val updatedRooms = zone.rooms.map { r ->
                                         if (r.id == room.id) {
-                                            r.copy(position = Position(newX, newY))
+                                            r.copy(position = Position(
+                                                newX * density,
+                                                newY * density
+                                            ))
                                         } else r
                                     }
                                     onZoneChanged(zone.copy(rooms = updatedRooms))
@@ -167,24 +165,16 @@ fun ZoneCanvas(
                     ) {
                         Column {
                             Text(room.name)
-                            Text(
-                                room.id,
-                                color = Color.Gray
-                            )
+                            Text(room.id, color = Color.Gray)
                             SelectionContainer {
                                 Column {
                                     Text(
-                                        "x: ${position.x.roundToInt()}, y: ${position.y.roundToInt()}",
+                                        "x: ${position.x.roundToInt()}dp, y: ${position.y.roundToInt()}dp",
                                         color = Color.Gray,
                                         fontSize = 10.sp
                                     )
                                     Text(
-                                        "max: ${dragBounds.x.roundToInt()} x ${dragBounds.y.roundToInt()}",
-                                        color = Color.Gray,
-                                        fontSize = 10.sp
-                                    )
-                                    Text(
-                                        "canvas: ${canvasSize.x.roundToInt()} x ${canvasSize.y.roundToInt()}",
+                                        "canvas: ${canvasSize.x.roundToInt()}dp x ${canvasSize.y.roundToInt()}dp",
                                         color = Color.Gray,
                                         fontSize = 10.sp
                                     )
