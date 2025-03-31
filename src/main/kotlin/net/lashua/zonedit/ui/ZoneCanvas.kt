@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.*
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 data class ConnectionDragState(
     val sourceRoomId: String,
@@ -173,20 +175,33 @@ fun ZoneCanvas(
                                     currentPoint = connectionDragState!!.currentPoint + dragAmount
                                 )
                             } else if (draggedRoomId != null) {
-                                // Handle room dragging
+                                // Accumulate the drag amount before snapping
                                 val modelDragX = dragAmount.x / (density * zoomLevel)
                                 val modelDragY = dragAmount.y / (density * zoomLevel)
                                 
                                 val room = currentZone.rooms.first { it.id == draggedRoomId }
                                 val oldPos = room.position
 
-                                // Calculate new position and apply grid snapping
+                                // Calculate new position first without snapping
                                 val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
                                 val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
-                                val snappedPos = currentZone.snapPosition(Position(rawX, rawY))
+                                
+                                // Only snap when we're close to a grid line
+                                val newPos = if (currentZone.snapToGrid) {
+                                    val snapThreshold = currentZone.gridSize / 3f  // Adjust this value to change sensitivity
+                                    val snappedX = (rawX / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                    val snappedY = (rawY / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                    
+                                    Position(
+                                        x = if (abs(rawX - snappedX) < snapThreshold) snappedX else rawX,
+                                        y = if (abs(rawY - snappedY) < snapThreshold) snappedY else rawY
+                                    )
+                                } else {
+                                    Position(rawX, rawY)
+                                }
 
                                 val updatedRooms = currentZone.rooms.map { r ->
-                                    if (r.id == draggedRoomId) r.copy(position = snappedPos)
+                                    if (r.id == draggedRoomId) r.copy(position = newPos)
                                     else r
                                 }
                                 currentZone = currentZone.copy(rooms = updatedRooms)
