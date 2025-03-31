@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Position
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @Composable
@@ -57,14 +58,15 @@ fun ZoneCanvas(
     }
     
     // Add padding and ensure minimum size (in dp)
+    // Round up to nearest grid size multiple to ensure grid lines align perfectly
     val canvasSize = remember(bounds) {
         Offset(
-            maxOf(bounds.second.x + 100f, canvasMinSize.value),
-            maxOf(bounds.second.y + 100f, canvasMinSize.value)
+            ceil(maxOf(bounds.second.x + 100f, canvasMinSize.value) / gridSize.value) * gridSize.value,
+            ceil(maxOf(bounds.second.y + 100f, canvasMinSize.value) / gridSize.value) * gridSize.value
         )
     }
 
-    // Calculate number of grid lines based on canvas size in dp
+    // Calculate number of grid lines - now exactly matching canvas size
     val gridLinesHorizontal = remember(canvasSize) { (canvasSize.x / gridSize.value).toInt() }
     val gridLinesVertical = remember(canvasSize) { (canvasSize.y / gridSize.value).toInt() }
 
