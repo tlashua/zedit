@@ -18,8 +18,8 @@ fun main() = application {
     
     // Empty initial zone
     val testZone = Zone(
-        id = "test-zone",
-        name = "Test Zone",
+        id = "scratchpad",
+        name = "scratchpad",
         nodeWidth = 100f,
         nodeHeight = 60f
     )

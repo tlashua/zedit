@@ -46,17 +46,33 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Zone name input - ADD THIS FIRST
-                    OutlinedTextField(
-                        value = currentZone.name,
-                        onValueChange = { newName ->
-                            currentZone = currentZone.copy(name = newName.take(20))
-                        },
-                        modifier = Modifier.width(200.dp),
-                        label = { Text("Zone Name") },
-                        singleLine = true
-                    )
-                    
+                    // Zone name input and renumber button
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = currentZone.name,
+                            onValueChange = { newName ->
+                                currentZone = currentZone.copy(name = newName.take(20))
+                            },
+                            modifier = Modifier.width(200.dp),
+                            label = { Text("Zone Name") },
+                            singleLine = true
+                        )
+                        
+                        Button(
+                            onClick = {
+                                if (currentZone.rooms.isNotEmpty()) {
+                                    currentZone = RoomUtils.renumberRooms(currentZone)
+                                }
+                            },
+                            enabled = currentZone.rooms.isNotEmpty()
+                        ) {
+                            Text("Renumber Rooms")
+                        }
+                    }
+
                     Divider(
                         modifier = Modifier
                             .height(32.dp)
