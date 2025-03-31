@@ -18,11 +18,10 @@ fun ZoneEditor(
     modifier: Modifier = Modifier
 ) {
     var currentZone by remember { mutableStateOf(zone) }
-    var selectedRoom by remember { mutableStateOf<Room?>(null) }
-    var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidth.toInt().toString()) }
     var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeight.toInt().toString()) }
     var zoomLevel by remember { mutableStateOf(1f) }
+    var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
     
@@ -81,6 +80,7 @@ fun ZoneEditor(
                     
                     Spacer(Modifier.weight(1f))
                     
+                    // Zoom controls
                     IconButton(
                         onClick = { zoomLevel = (zoomLevel - 0.1f).coerceAtLeast(0.1f) },
                         enabled = zoomLevel > 0.1f
@@ -97,7 +97,7 @@ fun ZoneEditor(
                         Text("+")
                     }
 
-                    // Add node size control
+                    // Node size controls
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -131,116 +131,77 @@ fun ZoneEditor(
                     }
                 }
             }
-            
-            // Main content area with updated canvas size
+
+            // Main content
             Row(modifier = Modifier.weight(1f)) {
-                // Left panel - Room List/Navigation (can be added later)
-                Surface(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .fillMaxHeight()
-                        .border(1.dp, Color.LightGray)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceBetween // This will push minimap to bottom
-                    ) {
-                        Column {
-                            Text("Room Navigator", style = MaterialTheme.typography.titleMedium)
-                            // Room list will go here
-                        }
-                        
-                        // Minimap at bottom
-                        Column {
-                            Text("Overview", style = MaterialTheme.typography.titleSmall)
-                            ZoneMinimap(
-                                zone = currentZone,
-                                canvasWidth = canvasWidth,
-                                canvasHeight = canvasHeight,
-                                minimapSize = 184  // 200 - 2*8dp padding
-                            )
-                        }
-                    }
-                }
-
-                // Center - Canvas with new size parameters
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    ZoneCanvas(
-                        zone = currentZone,
-                        zoomLevel = zoomLevel,
-                        canvasWidth = canvasWidth,
-                        canvasHeight = canvasHeight,
-                        selectedRoom = selectedRoom,  // Make sure this is passed
-                        onZoneChanged = { newZone ->
-                            currentZone = newZone
-                        },
-                        onRoomSelected = { room ->
-                            println("Room selected in ZoneEditor: ${room?.id}")  // Add debug print
-                            selectedRoom = room
-                        },
-                        onConnectionStarted = { room, direction ->
-                            println("Connection started in ZoneEditor: ${room.id}, $direction")  // Add debug print
-                            connectionDragState = ConnectionDragState(
-                                sourceRoomId = room.id,
-                                direction = direction,
-                                currentPoint = Offset.Zero
-                            )
-                        }
-                    )
-                }
-
-                // Right panel - Room Editor
-                Surface(
+                ZoneCanvas(
+                    zone = currentZone,
+                    zoomLevel = zoomLevel,
+                    canvasWidth = canvasWidth,
+                    canvasHeight = canvasHeight,
+                    selectedRoom = selectedRoom,
+                    onZoneChanged = { newZone ->
+                        println("ZoneEditor - Zone updated: ${newZone.rooms.map { it.id }}")
+                        currentZone = newZone
+                    },
+                    onRoomSelected = { room ->
+                        println("ZoneEditor - Room selection changed to: ${room?.id}")
+                        selectedRoom = room
+                    },
+                    onConnectionStarted = { room, direction ->
+                        println("ZoneEditor - Connection started from ${room.id} in direction $direction")
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Side panel for room details
+                Column(
                     modifier = Modifier
                         .width(300.dp)
                         .fillMaxHeight()
-                        .border(1.dp, Color.LightGray)
+                        .padding(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        Text("Room Properties", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Room Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    if (selectedRoom != null) {
+                        OutlinedTextField(
+                            value = selectedRoom!!.name,
+                            onValueChange = { newName ->
+                                val updatedRoom = selectedRoom!!.copy(name = newName)
+                                currentZone = currentZone.copy(
+                                    rooms = currentZone.rooms.map { 
+                                        if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                    }
+                                )
+                                selectedRoom = updatedRoom
+                            },
+                            label = { Text("Name") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         
-                        if (selectedRoom != null) {
-                            OutlinedTextField(
-                                value = selectedRoom!!.name,
-                                onValueChange = { newName ->
-                                    val updatedRoom = selectedRoom!!.copy(name = newName)
-                                    currentZone = currentZone.copy(
-                                        rooms = currentZone.rooms.map { 
-                                            if (it.id == selectedRoom!!.id) updatedRoom else it 
-                                        }
-                                    )
-                                    selectedRoom = updatedRoom
-                                },
-                                label = { Text("Name") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                            )
-                            
-                            OutlinedTextField(
-                                value = selectedRoom!!.description,
-                                onValueChange = { newDesc ->
-                                    val updatedRoom = selectedRoom!!.copy(description = newDesc)
-                                    currentZone = currentZone.copy(
-                                        rooms = currentZone.rooms.map { 
-                                            if (it.id == selectedRoom!!.id) updatedRoom else it 
-                                        }
-                                    )
-                                    selectedRoom = updatedRoom
-                                },
-                                label = { Text("Description") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                minLines = 3
-                            )
-                        } else {
-                            Text("No room selected", color = Color.Gray)
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        OutlinedTextField(
+                            value = selectedRoom!!.description,
+                            onValueChange = { newDesc ->
+                                val updatedRoom = selectedRoom!!.copy(description = newDesc)
+                                currentZone = currentZone.copy(
+                                    rooms = currentZone.rooms.map { 
+                                        if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                    }
+                                )
+                                selectedRoom = updatedRoom
+                            },
+                            label = { Text("Description") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3
+                        )
+                    } else {
+                        Text("No room selected", color = Color.Gray)
                     }
                 }
             }
