@@ -356,16 +356,30 @@ private fun DrawScope.drawRoom(
     )
     
     // Draw room name
-    val textStyle = TextStyle(
+    val nameStyle = TextStyle(
         fontSize = (14 * zoomLevel).sp,
         color = Color.Black
     )
     
+    val idStyle = TextStyle(
+        fontSize = (10 * zoomLevel).sp,
+        color = Color.Gray
+    )
+    
+    // Draw name
     drawText(
         textMeasurer = textMeasurer,
         text = room.name,
         topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
-        style = textStyle
+        style = nameStyle
+    )
+    
+    // Draw ID below name
+    drawText(
+        textMeasurer = textMeasurer,
+        text = room.id,
+        topLeft = rect.topLeft + Offset(8f * zoomLevel, 24f * zoomLevel),
+        style = idStyle
     )
     
     // Draw connection points if selected
