@@ -1,7 +1,7 @@
 package net.lashua.zonedit.model
 
 enum class ExitDirection {
-    NORTH, SOUTH, EAST, WEST, UP, DOWN
+    NORTH, EAST, SOUTH, WEST, UP, DOWN
 }
 
 data class Zone(
@@ -10,6 +10,17 @@ data class Zone(
     val rooms: List<Room> = emptyList(),
     val nodeWidth: Float = 100f,  // Default node width in dp
     val nodeHeight: Float = 60f,  // Default node height in dp
+)
+
+// I don't know that strings are a good idea here.  At one point we may
+// need an identifier object.
+data class Exits(
+    var northDest: String?,
+    var eastDest: String?,
+    var southDest: String?,
+    var westDest: String?,
+    var upDest: String?,
+    var downDest: String?,
 )
 
 data class Room(
