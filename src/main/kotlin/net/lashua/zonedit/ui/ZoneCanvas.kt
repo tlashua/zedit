@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -26,13 +27,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.lashua.zonedit.model.Position
-import net.lashua.zonedit.model.Room
-import net.lashua.zonedit.model.Zone
-import net.lashua.zonedit.model.ExitDirection
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.input.pointer.PointerInputChange
-import net.lashua.zonedit.model.ConnectionDragState
+import net.lashua.zonedit.model.*
 
 @Composable
 fun ZoneCanvas(
@@ -129,7 +124,7 @@ fun ZoneCanvas(
                                 // Don't allow room drag if we're near any connection points of the selected room
                                 if (room.id == selectedRoom?.id) {
                                     val connectionPointSize = 12f * density * zoomLevel
-                                    val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
+                                    // Use the already calculated roomRect instead of recalculating
                                     val northPoint = Offset(roomRect.center.x, roomRect.top)
                                     val southPoint = Offset(roomRect.center.x, roomRect.bottom)
                                     val eastPoint = Offset(roomRect.right, roomRect.center.y)
@@ -217,7 +212,7 @@ fun ZoneCanvas(
             
             // Draw existing connections
             for (room in currentZone.rooms) {
-                drawConnections(room, currentZone, density, zoomLevel, selectedRoom)
+                drawConnections(room, currentZone, density, zoomLevel)
             }
             
             // Draw connection preview if dragging
@@ -372,8 +367,7 @@ private fun DrawScope.drawConnections(
     room: Room,
     zone: Zone,
     density: Float,
-    zoomLevel: Float,
-    selectedRoom: Room?
+    zoomLevel: Float
 ) {
     val sourceRect = getRoomRect(room, zone, density, zoomLevel)
     val sourceCenter = Offset(
@@ -381,7 +375,7 @@ private fun DrawScope.drawConnections(
         sourceRect.center.y
     )
     
-    for ((direction, destId) in room.exits) {
+    for ((_, destId) in room.exits) {
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
         val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
         val destCenter = Offset(
@@ -399,18 +393,18 @@ private fun DrawScope.drawConnections(
         // Convert angles to Float
         val arrowLength = 20f * zoomLevel
         val angle = kotlin.math.atan2(
-            (destCenter.y - sourceCenter.y).toFloat(),
-            (destCenter.x - sourceCenter.x).toFloat()
+            (destCenter.y - sourceCenter.y),
+            (destCenter.x - sourceCenter.x)
         )
         val arrowAngle = (kotlin.math.PI / 6).toFloat() // 30 degrees
         
         val arrowPoint1 = Offset(
-            destCenter.x - arrowLength * kotlin.math.cos(angle - arrowAngle).toFloat(),
-            destCenter.y - arrowLength * kotlin.math.sin(angle - arrowAngle).toFloat()
+            destCenter.x - arrowLength * kotlin.math.cos(angle - arrowAngle),
+            destCenter.y - arrowLength * kotlin.math.sin(angle - arrowAngle)
         )
         val arrowPoint2 = Offset(
-            destCenter.x - arrowLength * kotlin.math.cos(angle + arrowAngle).toFloat(),
-            destCenter.y - arrowLength * kotlin.math.sin(angle + arrowAngle).toFloat()
+            destCenter.x - arrowLength * kotlin.math.cos(angle + arrowAngle),
+            destCenter.y - arrowLength * kotlin.math.sin(angle + arrowAngle)
         )
         
         drawLine(
@@ -428,23 +422,10 @@ private fun DrawScope.drawConnections(
     }
 }
 
-private data class ConnectionDragState(
-    val sourceRoomId: String,
-    val direction: ExitDirection,
-    val currentPoint: Offset
-)
-
 private fun isNearPoint(point: Offset, target: Offset, threshold: Float): Boolean {
     val distance = kotlin.math.sqrt(
         (point.x - target.x) * (point.x - target.x) +
         (point.y - target.y) * (point.y - target.y)
     )
     return distance <= threshold
-}
-
-private fun calculateDistance(point1: Offset, point2: Offset): Float {
-    return kotlin.math.sqrt(
-        (point1.x - point2.x) * (point1.x - point2.x) +
-        (point1.y - point2.y) * (point1.y - point2.y)
-    )
 }
