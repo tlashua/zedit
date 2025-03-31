@@ -1,0 +1,34 @@
+# Zone metadata
+name = "castle_dungeon"
+id = "castle_dungeon"
+node_width = 100.0
+node_height = 60.0
+
+# Room definitions
+[[rooms]]
+id = "castle_dungeon0"
+name = "Dungeon Entrance"
+description = """
+A heavy iron door creaks on rusty hinges. Torch brackets
+line the damp stone walls, casting flickering shadows."""
+position = { x = 100.0, y = 100.0 }
+flags = ["no_mob", "light"]  # Future extensibility for room attributes
+
+[[rooms]]
+id = "castle_dungeon1"
+name = "Guard Post"
+description = """
+Ancient weapons hang on the walls. A wooden table
+shows signs of recent use."""
+position = { x = 200.0, y = 100.0 }
+exits = { east = "castle_dungeon0", south = "castle_dungeon2" }
+
+# Future extensibility
+[zone_attributes]
+level_range = { min = 5, max = 10 }
+reset_time = 15  # minutes
+weather = true
+
+[scripting]
+on_enter = "check_player_level"
+on_reset = "spawn_guards"
