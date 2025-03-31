@@ -162,10 +162,10 @@ fun ZoneCanvas(
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
-                                    val newX = (position.x + dragAmount.x / zoomLevel)
-                                        .coerceIn(0f, canvasSize.x - 100f)
-                                    val newY = (position.y + dragAmount.y / zoomLevel)
-                                        .coerceIn(0f, canvasSize.y - 100f)
+                                    val newX = (position.x + dragAmount.x / (density * zoomLevel))
+                                        .coerceIn(0f, (canvasSize.x / density) - 100f)
+                                    val newY = (position.y + dragAmount.y / (density * zoomLevel))
+                                        .coerceIn(0f, (canvasSize.y / density) - 100f)
                                     
                                     position = Offset(newX, newY)
                                     
