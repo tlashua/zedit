@@ -1,27 +1,34 @@
 package net.lashua.zonedit.ui
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
-import net.lashua.zonedit.model.Zone
-import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Position
-import kotlin.math.ceil
-import kotlin.math.roundToInt
+import net.lashua.zonedit.model.Room
+import net.lashua.zonedit.model.Zone
 
 @Composable
 fun ZoneCanvas(
@@ -34,192 +41,166 @@ fun ZoneCanvas(
     onRoomSelected: (Room?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val horizontalScrollState = rememberScrollState()
-    val verticalScrollState = rememberScrollState()
     val density = LocalDensity.current.density
     val baseGridSize = 20.dp
-    val canvasMinSize = Offset(canvasWidth.toFloat(), canvasHeight.toFloat())
+    val horizontalScrollState = rememberScrollState()
+    val verticalScrollState = rememberScrollState()
+    val textMeasurer = rememberTextMeasurer()
     
-    val bounds = remember(zone.rooms) {
-        if (zone.rooms.isEmpty()) {
-            Pair(Offset.Zero, Offset(canvasMinSize.x, canvasMinSize.y))
-        } else {
-            zone.rooms.fold(Pair(Offset.Zero, Offset.Zero)) { acc, room ->
-                Pair(
-                    Offset(
-                        minOf(acc.first.x, room.position.x / density),
-                        minOf(acc.first.y, room.position.y / density)
-                    ),
-                    Offset(
-                        maxOf(acc.second.x, room.position.x / density),
-                        maxOf(acc.second.y, room.position.y / density)
-                    )
-                )
-            }
-        }
+    var currentZone by remember { mutableStateOf(zone) }
+    var draggedRoomId by remember { mutableStateOf<String?>(null) }
+    
+    // Update currentZone when zone changes from outside
+    LaunchedEffect(zone) {
+        currentZone = zone
     }
     
-    val canvasSize = remember(bounds, canvasWidth, canvasHeight) {
-        Offset(
-            maxOf(bounds.second.x + 100f, canvasMinSize.x),
-            maxOf(bounds.second.y + 100f, canvasMinSize.y)
-        )
-    }
-
-    val gridLinesHorizontal = remember(canvasSize) { 
-        (canvasSize.x / baseGridSize.value).toInt() 
-    }
-    val gridLinesVertical = remember(canvasSize) { 
-        (canvasSize.y / baseGridSize.value).toInt() 
-    }
-
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .horizontalScroll(horizontalScrollState)
+            .verticalScroll(verticalScrollState)
     ) {
-        Box(
+        Canvas(
             modifier = Modifier
-                .horizontalScroll(horizontalScrollState)
-                .verticalScroll(verticalScrollState)
                 .size(
-                    (canvasSize.x * zoomLevel).dp,
-                    (canvasSize.y * zoomLevel).dp
+                    (canvasWidth * zoomLevel).dp,
+                    (canvasHeight * zoomLevel).dp
                 )
-                .border(1.dp, Color.Red)
-                .drawBehind {
-                    val gridSizePx = (baseGridSize * zoomLevel).toPx()
-                    
-                    // Draw vertical grid lines
-                    repeat(gridLinesHorizontal + 1) { x ->
-                        val isMajorLine = x % 10 == 0
-                        drawLine(
-                            color = if (isMajorLine) Color.Gray else Color.LightGray,
-                            start = Offset(x * gridSizePx, 0f),
-                            end = Offset(x * gridSizePx, size.height),
-                            strokeWidth = if (isMajorLine) 1f else 0.5f
-                        )
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        val clickedRoom = currentZone.rooms.firstOrNull { room ->
+                            val roomRect = getRoomRect(room, density, zoomLevel)
+                            roomRect.contains(offset)
+                        }
+                        onRoomSelected(clickedRoom)
                     }
-                    // Draw horizontal grid lines
-                    repeat(gridLinesVertical + 1) { y ->
-                        val isMajorLine = y % 10 == 0
-                        drawLine(
-                            color = if (isMajorLine) Color.Gray else Color.LightGray,
-                            start = Offset(0f, y * gridSizePx),
-                            end = Offset(size.width, y * gridSizePx),
-                            strokeWidth = if (isMajorLine) 1f else 0.5f
-                        )
-                    }
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            draggedRoomId = currentZone.rooms.firstOrNull { room ->
+                                val roomRect = getRoomRect(room, density, zoomLevel)
+                                roomRect.contains(offset)
+                            }?.id
+                            println("Started dragging room: $draggedRoomId")
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            if (draggedRoomId != null) {
+                                // Convert screen coordinates to model coordinates
+                                val modelDragX = dragAmount.x / (zoomLevel * density)
+                                val modelDragY = dragAmount.y / (zoomLevel * density)
+                                
+                                val room = currentZone.rooms.first { it.id == draggedRoomId }
+                                val oldPos = room.position
+                                val newPos = Position(
+                                    x = oldPos.x + modelDragX,
+                                    y = oldPos.y + modelDragY
+                                )
+                                
+                                println("Room ${room.id} position update:")
+                                println("  Old position: (${oldPos.x}, ${oldPos.y})")
+                                println("  Drag amount: ($modelDragX, $modelDragY)")
+                                println("  New position: (${newPos.x}, ${newPos.y})")
+                                
+                                val updatedRooms = currentZone.rooms.map { r ->
+                                    if (r.id == draggedRoomId) {
+                                        r.copy(position = newPos)
+                                    } else r
+                                }
+                                currentZone = currentZone.copy(rooms = updatedRooms)
+                                onZoneChanged(currentZone)
+                            }
+                        },
+                        onDragEnd = {
+                            println("Finished dragging room: $draggedRoomId")
+                            draggedRoomId = null
+                        }
+                    )
                 }
         ) {
-            // Single debug info display
-            Box(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .background(Color.White.copy(alpha = 0.8f))
-                    .padding(4.dp)
-            ) {
-                Column {
-                    Text(
-                        "(0,0)",
-                        color = Color.Gray,
-                        fontSize = (10 * zoomLevel).sp
-                    )
-                    Text(
-                        "Rooms: ${zone.rooms.size}",
-                        color = Color.Gray,
-                        fontSize = (10 * zoomLevel).sp
-                    )
-                    Text(
-                        "Grid: ${(baseGridSize.value * zoomLevel).roundToInt()}dp",
-                        color = Color.Gray,
-                        fontSize = (10 * zoomLevel).sp
-                    )
-                }
-            }
-
-            // Room rendering
-            for (room in zone.rooms) {
-                key(room.id) {
-                    var position by remember(room.id, room.position) { 
-                        mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .offset { IntOffset(
-                                ((position.x * density * zoomLevel).roundToInt()),
-                                ((position.y * density * zoomLevel).roundToInt())
-                            )}
-                            .size(
-                                (100 * zoomLevel).dp,
-                                (100 * zoomLevel).dp
-                            )
-                            .clickable { onRoomSelected(room) }
-                            .border(
-                                width = if (selectedRoom?.id == room.id) 2.dp else 1.dp,
-                                color = if (selectedRoom?.id == room.id) Color.Blue else Color.Black
-                            )
-                            .padding((8 * zoomLevel).dp)
-                            .pointerInput(Unit) {
-                                detectDragGestures { change, dragAmount ->
-                                    change.consume()
-                                    
-                                    // Calculate new position
-                                    val newX = (position.x + dragAmount.x / (density * zoomLevel))
-                                        .coerceIn(0f, canvasSize.x / density - 100f)
-                                    val newY = (position.y + dragAmount.y / (density * zoomLevel))
-                                        .coerceIn(0f, canvasSize.y / density - 100f)
-                                    
-                                    position = Offset(newX, newY)
-                                    
-                                    // Create a new list with the updated room
-                                    val updatedRooms = zone.rooms.map { r ->
-                                        if (r.id == room.id) {
-                                            r.copy(position = Position(
-                                                x = newX * density,
-                                                y = newY * density
-                                            ))
-                                        } else {
-                                            r
-                                        }
-                                    }
-                                    
-                                    println("Updating room ${room.id}. Current rooms: ${zone.rooms.map { it.id }}")
-                                    println("Updated rooms: ${updatedRooms.map { it.id }}")
-                                    
-                                    onZoneChanged(zone.copy(rooms = updatedRooms))
-                                }
-                            }
-                    ) {
-                        Column {
-                            Text(
-                                room.name,
-                                fontSize = (14 * zoomLevel).sp
-                            )
-                            Text(
-                                room.id,
-                                color = Color.Gray,
-                                fontSize = (10 * zoomLevel).sp
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                "(${(position.x * density).roundToInt()}, ${(position.y * density).roundToInt()})",
-                                color = Color.Gray,
-                                fontSize = (10 * zoomLevel).sp,
-                                modifier = Modifier.align(Alignment.End)
-                            )
-                        }
-                    }
-                }
+            drawGrid(baseGridSize.toPx(), zoomLevel, size)
+            
+            for (room in currentZone.rooms) {
+                drawRoom(room, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
             }
         }
-        
-        VerticalScrollbar(
-            modifier = Modifier.align(Alignment.CenterEnd),
-            adapter = rememberScrollbarAdapter(verticalScrollState)
+    }
+}
+
+private fun getRoomRect(room: Room, density: Float, zoomLevel: Float): Rect {
+    // Convert model coordinates to screen coordinates
+    val screenX = room.position.x * density * zoomLevel
+    val screenY = room.position.y * density * zoomLevel
+    val size = 100f * density * zoomLevel
+    
+    return Rect(
+        offset = Offset(screenX, screenY),
+        size = Size(size, size)
+    )
+}
+
+private fun DrawScope.drawRoom(
+    room: Room,
+    density: Float,
+    zoomLevel: Float,
+    isSelected: Boolean,
+    textMeasurer: TextMeasurer
+) {
+    val rect = getRoomRect(room, density, zoomLevel)
+    
+    drawRect(
+        color = Color.White,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Fill
+    )
+    
+    drawRect(
+        color = if (isSelected) Color.Blue else Color.Black,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Stroke(width = if (isSelected) 2f else 1f)
+    )
+    
+    val textStyle = TextStyle(
+        fontSize = (14 * zoomLevel).sp,
+        color = Color.Black
+    )
+    
+     drawText(
+        textMeasurer = textMeasurer,
+        text = room.name,
+        topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
+        style = textStyle
+    )
+}
+
+private fun DrawScope.drawGrid(gridSizePx: Float, zoomLevel: Float, size: Size) {
+    val gridSize = gridSizePx * zoomLevel
+    val horizontalLines = (size.height / gridSize).toInt()
+    val verticalLines = (size.width / gridSize).toInt()
+    
+    repeat(horizontalLines + 1) { i ->
+        val y = i * gridSize
+        val isMajor = i % 10 == 0
+        drawLine(
+            color = if (isMajor) Color.Gray else Color.LightGray,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = if (isMajor) 1f else 0.5f
         )
-        HorizontalScrollbar(
-            modifier = Modifier.align(Alignment.BottomStart),
-            adapter = rememberScrollbarAdapter(horizontalScrollState)
+    }
+    
+    repeat(verticalLines + 1) { i ->
+        val x = i * gridSize
+        val isMajor = i % 10 == 0
+        drawLine(
+            color = if (isMajor) Color.Gray else Color.LightGray,
+            start = Offset(x, 0f),
+            end = Offset(x, size.height),
+            strokeWidth = if (isMajor) 1f else 0.5f
         )
     }
 }
