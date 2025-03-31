@@ -8,6 +8,7 @@ import net.lashua.zonedit.model.*
 import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import org.slf4j.LoggerFactory
 
 @Serializable
 data class ZoneFile(
@@ -37,6 +38,8 @@ data class SerializablePosition(
 )
 
 object ZoneSerializer {
+    private val log = LoggerFactory.getLogger(ZoneSerializer::class.java)
+
     private val toml = Toml(
         inputConfig = TomlInputConfig(
             ignoreUnknownNames = true,
@@ -50,6 +53,7 @@ object ZoneSerializer {
     )
 
     fun saveZone(zone: Zone, file: File) {
+        log.debug("Preparing to save zone '${zone.name}' to ${file.absolutePath}")
         val zoneFile = ZoneFile(
             name = zone.name,
             id = zone.id,
@@ -69,6 +73,8 @@ object ZoneSerializer {
             }
         )
         
+        log.debug("Serialized zone contains ${zoneFile.rooms.size} rooms")
+        
         // Add header comment
         val header = """
             # Zone file for ${zone.name}
@@ -78,7 +84,15 @@ object ZoneSerializer {
         """.trimIndent()
         
         val tomlContent = toml.encodeToString(ZoneFile.serializer(), zoneFile)
-        file.writeText(header + tomlContent)
+        log.debug("Generated TOML content (first 100 chars): ${tomlContent.take(100)}...")
+        
+        try {
+            file.writeText(header + tomlContent)
+            log.info("Successfully wrote ${file.length()} bytes to ${file.absolutePath}")
+        } catch (e: Exception) {
+            log.error("Failed to write file", e)
+            throw e
+        }
     }
 
     private fun formatMultilineString(text: String): String {

@@ -46,33 +46,45 @@ fun ZoneEditor(
     fun handleFileOperation(operation: (JFileChooser) -> Int) {
         fileChooser?.let { chooser ->
             val window = ComposeWindow()
+            log.debug("Starting file operation with chooser: ${chooser.currentDirectory?.absolutePath}")
+            
+            // Determine operation type before executing it
+            val isSaveOperation = operation == chooser::showSaveDialog
+            log.debug("Operation type: ${if (isSaveOperation) "SAVE" else "OPEN"}")
+            
             val result = operation(chooser)
             
             if (result == JFileChooser.APPROVE_OPTION) {
                 val file = chooser.selectedFile
+                log.debug("File selected: ${file.absolutePath}")
                 try {
-                    when (operation) {
-                        chooser::showOpenDialog -> {
-                            currentZone = ZoneSerializer.loadZone(file)
-                            nodeWidthText = currentZone.nodeWidth.toInt().toString()
-                            nodeHeightText = currentZone.nodeHeight.toInt().toString()
-                            selectedRoom = null
-                            log.info("Loaded zone from ${file.path}")
-                        }
-                        chooser::showSaveDialog -> {
-                            // Ensure .zone extension
-                            val saveFile = if (!file.name.endsWith(".zone")) {
-                                File(file.parentFile, "${file.name}.zone")
-                            } else file
-                            
-                            ZoneSerializer.saveZone(currentZone, saveFile)
-                            log.info("Saved zone to ${saveFile.path}")
-                        }
+                    if (isSaveOperation) {
+                        log.debug("Executing SAVE operation")
+                        // Ensure .zone extension
+                        val saveFile = if (!file.name.endsWith(".zone")) {
+                            File(file.parentFile, "${file.name}.zone").also {
+                                log.debug("Adding .zone extension. New path: ${it.absolutePath}")
+                            }
+                        } else file
+                        
+                        log.debug("About to save zone with ${currentZone.rooms.size} rooms to: ${saveFile.absolutePath}")
+                        ZoneSerializer.saveZone(currentZone, saveFile)
+                        log.info("Successfully saved zone to ${saveFile.absolutePath}")
+                    } else {
+                        log.debug("Executing OPEN operation")
+                        currentZone = ZoneSerializer.loadZone(file)
+                        nodeWidthText = currentZone.nodeWidth.toInt().toString()
+                        nodeHeightText = currentZone.nodeHeight.toInt().toString()
+                        selectedRoom = null
+                        log.info("Successfully loaded zone from ${file.absolutePath}")
                     }
                 } catch (e: Exception) {
                     log.error("File operation failed", e)
-                    // TODO: Show error dialog
+                    log.error("Failed path: ${file.absolutePath}")
+                    e.printStackTrace()
                 }
+            } else {
+                log.debug("File operation cancelled by user")
             }
             window.dispose()
         }
