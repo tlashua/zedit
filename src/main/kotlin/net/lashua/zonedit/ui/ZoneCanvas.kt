@@ -50,8 +50,10 @@ fun ZoneCanvas(
     var currentZone by remember { mutableStateOf(zone) }
     var draggedRoomId by remember { mutableStateOf<String?>(null) }
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
-    
+    var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
+
     LaunchedEffect(selectedRoom) {
+        currentSelectedRoom = selectedRoom
         println("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
     }
 
@@ -80,6 +82,7 @@ fun ZoneCanvas(
                                 val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                                 roomRect.contains(offset)
                             }
+                            currentSelectedRoom = clickedRoom
                             onRoomSelected(clickedRoom)
                         }
                     }
@@ -87,9 +90,13 @@ fun ZoneCanvas(
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = { offset ->
-                            // Check if we're starting from a connection point of the selected room
-                            if (selectedRoom != null) {
-                                val roomRect = getRoomRect(selectedRoom, currentZone, density, zoomLevel)
+                            println("=== Drag Start ===")
+                            println("Initial offset: $offset")
+                            println("Selected room: ${currentSelectedRoom?.id}")
+                            
+                            // First check if we're near any connection point of the selected room
+                            if (currentSelectedRoom != null) {
+                                val roomRect = getRoomRect(currentSelectedRoom!!, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
                                 
                                 val northPoint = Offset(roomRect.center.x, roomRect.top)
@@ -106,88 +113,67 @@ fun ZoneCanvas(
                                 }
                                 
                                 if (direction != null) {
-                                    println("Starting connection drag from ${selectedRoom.id} in direction $direction")
+                                    println("Starting connection drag from ${currentSelectedRoom!!.id} in direction $direction")
                                     connectionDragState = ConnectionDragState(
-                                        sourceRoomId = selectedRoom.id,
+                                        sourceRoomId = currentSelectedRoom!!.id,
                                         direction = direction,
                                         currentPoint = offset
                                     )
-                                    onConnectionStarted(selectedRoom, direction)
-                                    draggedRoomId = null  // Ensure room drag state is cleared
+                                    onConnectionStarted(currentSelectedRoom!!, direction)
                                     return@detectDragGestures
                                 }
                             }
                             
-                            // If not a connection point, check for room dragging
+                            // Only try to drag room if we're not near any connection point
                             val roomToDrag = currentZone.rooms.firstOrNull { room ->
                                 val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
-                                // Don't allow room drag if we're near any connection points of the selected room
-                                if (room.id == selectedRoom?.id) {
-                                    val connectionPointSize = 12f * density * zoomLevel
-                                    // Use the already calculated roomRect instead of recalculating
-                                    val northPoint = Offset(roomRect.center.x, roomRect.top)
-                                    val southPoint = Offset(roomRect.center.x, roomRect.bottom)
-                                    val eastPoint = Offset(roomRect.right, roomRect.center.y)
-                                    val westPoint = Offset(roomRect.left, roomRect.center.y)
-                                    
-                                    !isNearPoint(offset, northPoint, connectionPointSize) &&
-                                    !isNearPoint(offset, southPoint, connectionPointSize) &&
-                                    !isNearPoint(offset, eastPoint, connectionPointSize) &&
-                                    !isNearPoint(offset, westPoint, connectionPointSize) &&
-                                    roomRect.contains(offset)
-                                } else {
-                                    roomRect.contains(offset)
-                                }
+                                roomRect.contains(offset)
                             }
                             
                             if (roomToDrag != null) {
                                 println("Starting room drag: ${roomToDrag.id}")
                                 draggedRoomId = roomToDrag.id
-                                connectionDragState = null  // Ensure connection drag state is cleared
                             }
                         },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            println("Drag update - connectionDragState: $connectionDragState, draggedRoomId: $draggedRoomId")
-                            
-                            connectionDragState?.let { state ->
-                                // Handle connection dragging
-                                connectionDragState = state.copy(
-                                    currentPoint = state.currentPoint + dragAmount
+                            if (connectionDragState != null) {
+                                connectionDragState = connectionDragState?.copy(
+                                    currentPoint = connectionDragState!!.currentPoint + dragAmount
                                 )
-                                println("Connection drag update: ${connectionDragState?.currentPoint}")
-                            } ?: run {
-                                // Handle room dragging only if no connection drag is active
-                                draggedRoomId?.let { roomId ->
-                                    val modelDragX = dragAmount.x / (density * zoomLevel)
-                                    val modelDragY = dragAmount.y / (density * zoomLevel)
-                                    
-                                    val room = currentZone.rooms.first { it.id == roomId }
-                                    val oldPos = room.position
-                                    
-                                    val newX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
-                                    val newY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
-                                    
-                                    val updatedRooms = currentZone.rooms.map { r ->
-                                        if (r.id == roomId) r.copy(position = Position(x = newX, y = newY))
-                                        else r
-                                    }
-                                    currentZone = currentZone.copy(rooms = updatedRooms)
-                                    onZoneChanged(currentZone)
+                            } else if (draggedRoomId != null) {
+                                // Handle room dragging
+                                val modelDragX = dragAmount.x / (density * zoomLevel)
+                                val modelDragY = dragAmount.y / (density * zoomLevel)
+                                
+                                val room = currentZone.rooms.first { it.id == draggedRoomId }
+                                val oldPos = room.position
+                                
+                                val newX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
+                                val newY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
+                                
+                                val updatedRooms = currentZone.rooms.map { r ->
+                                    if (r.id == draggedRoomId) r.copy(position = Position(x = newX, y = newY))
+                                    else r
                                 }
+                                currentZone = currentZone.copy(rooms = updatedRooms)
+                                onZoneChanged(currentZone)
                             }
                         },
                         onDragEnd = {
-                            println("Drag ended")
-                            println("Connection state: $connectionDragState")
-                            println("Dragged room id: $draggedRoomId")
+                            println("=== Drag End ===")
+                            println("Final connection state: $connectionDragState")
+                            println("Final dragged room: $draggedRoomId")
                             
                             connectionDragState?.let { state ->
-                                val finalPoint = state.currentPoint
+                                println("Checking for target room at: ${state.currentPoint}")
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
                                     val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
-                                    roomRect.contains(finalPoint) && room.id != state.sourceRoomId
+                                    val contains = roomRect.contains(state.currentPoint)
+                                    println("Checking room ${room.id}: contains=${contains}")
+                                    contains && room.id != state.sourceRoomId
                                 }
+                                println("Target room found: ${targetRoom?.id}")
                                 
                                 if (targetRoom != null) {
                                     val updatedRooms = currentZone.rooms.map { room ->
@@ -239,7 +225,7 @@ fun ZoneCanvas(
             
             // Draw rooms last so they appear on top
             for (room in currentZone.rooms) {
-                drawRoom(room, currentZone, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
+                drawRoom(room, currentZone, density, zoomLevel, room.id == currentSelectedRoom?.id, textMeasurer)
             }
         }
     }
