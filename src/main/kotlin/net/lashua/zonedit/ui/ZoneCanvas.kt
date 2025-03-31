@@ -82,7 +82,8 @@ fun ZoneCanvas(
                 }
                 .pointerInput(Unit) {
                     detectDragGestures(
-                        onDragStart = { offset: Offset ->
+                        onDragStart = { offset ->
+                            // Check if we're starting drag on a connection point
                             if (selectedRoom != null) {
                                 val roomRect = getRoomRect(selectedRoom, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
@@ -100,6 +101,7 @@ fun ZoneCanvas(
                                 }
                                 
                                 if (direction != null) {
+                                    onConnectionStarted(selectedRoom, direction)
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = selectedRoom.id,
                                         direction = direction,
@@ -109,20 +111,29 @@ fun ZoneCanvas(
                                 }
                             }
                             
-                            // If not a connection point, handle room dragging
-                            draggedRoomId = currentZone.rooms.firstOrNull { room ->
+                            // If not a connection point, try to start room drag
+                            val roomToDrag = currentZone.rooms.firstOrNull { room ->
                                 val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                                 roomRect.contains(offset)
-                            }?.id
+                            }
+                            if (roomToDrag != null) {
+                                draggedRoomId = roomToDrag.id
+                                if (roomToDrag.id != selectedRoom?.id) {
+                                    onRoomSelected(roomToDrag)
+                                }
+                            }
                         },
                         onDrag = { change, dragAmount ->
                             change.consume()
+                            
+                            // Handle connection drag
                             connectionDragState?.let { state ->
                                 connectionDragState = state.copy(
                                     currentPoint = state.currentPoint + dragAmount
                                 )
+                                // Remove the return@detectDragGestures
                             } ?: run {
-                                // Only handle room drag if we're not dragging a connection
+                                // Handle room drag only if we're not handling a connection drag
                                 draggedRoomId?.let { id ->
                                     val modelDragX = dragAmount.x / (density * zoomLevel)
                                     val modelDragY = dragAmount.y / (density * zoomLevel)
@@ -148,11 +159,12 @@ fun ZoneCanvas(
                                 }
                             }
                         },
-                        onDragEnd = { 
+                        onDragEnd = {
                             connectionDragState?.let { state ->
+                                val finalPoint = state.currentPoint
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
                                     val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
-                                    roomRect.contains(state.currentPoint) && room.id != state.sourceRoomId
+                                    roomRect.contains(finalPoint) && room.id != state.sourceRoomId
                                 }
                                 
                                 if (targetRoom != null) {
@@ -167,7 +179,6 @@ fun ZoneCanvas(
                                     onZoneChanged(currentZone)
                                 }
                             }
-                            
                             connectionDragState = null
                             draggedRoomId = null
                         }
@@ -203,7 +214,7 @@ fun ZoneCanvas(
                 )
             }
             
-            // Draw rooms
+            // Draw rooms last so they appear on top
             for (room in currentZone.rooms) {
                 drawRoom(room, currentZone, density, zoomLevel, room.id == selectedRoom?.id, textMeasurer)
             }
