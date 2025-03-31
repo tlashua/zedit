@@ -34,7 +34,6 @@ fun RoomNode(
             .padding(8.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { _ -> onClick() },
                     onDrag = { change, dragAmount ->
                         change.consume()
                         onPositionChanged(Position(
@@ -55,6 +54,40 @@ fun RoomNode(
 
         // Show connection points when selected
         if (selected) {
+            // Up connection point (top-right corner)
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color.Green, CircleShape)
+                    .align(Alignment.TopEnd)
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { _ ->
+                                onConnectionStarted(room, ExitDirection.UP)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                            }
+                        )
+                    }
+            )
+            // Down connection point (bottom-right corner)
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color.Green, CircleShape)
+                    .align(Alignment.BottomEnd)
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { _ ->
+                                onConnectionStarted(room, ExitDirection.DOWN)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                            }
+                        )
+                    }
+            )
             // North connection point
             Box(
                 modifier = Modifier
