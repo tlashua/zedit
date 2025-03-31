@@ -1,5 +1,6 @@
 package net.lashua.zonedit.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,6 +11,7 @@ import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Position
 import java.util.UUID
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ZoneEditor(
@@ -18,10 +20,11 @@ fun ZoneEditor(
 ) {
     var currentZone by remember { mutableStateOf(zone) }
     var zoomLevel by remember { mutableStateOf(1f) }
+    var selectedRoom by remember { mutableStateOf<Room?>(null) }
     
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
-            //  Toolbar
+            // Toolbar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp
@@ -31,7 +34,6 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Add Room button
                     Button(
                         onClick = {
                             val newRoom = Room(
@@ -48,12 +50,10 @@ fun ZoneEditor(
                         Text("Add Room")
                     }
 
-                    // Canvas size display
                     Text("Canvas: 1000 × 1000")
                     
                     Spacer(Modifier.weight(1f))
                     
-                    // Zoom controls
                     IconButton(
                         onClick = { zoomLevel = (zoomLevel - 0.1f).coerceAtLeast(0.1f) },
                         enabled = zoomLevel > 0.1f
@@ -72,15 +72,89 @@ fun ZoneEditor(
                 }
             }
             
-            // Canvas
-            ZoneCanvas(
-                zone = currentZone,
-                zoomLevel = zoomLevel,
-                onZoneChanged = { newZone ->
-                    currentZone = newZone
-                },
-                modifier = Modifier.weight(1f)
-            )
+            // Main content area
+            Row(modifier = Modifier.weight(1f)) {
+                // Left panel - Room List/Navigation (can be added later)
+                Surface(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .fillMaxHeight()
+                        .border(1.dp, Color.LightGray)
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text("Room Navigator", style = MaterialTheme.typography.titleMedium)
+                        // Room list will go here
+                    }
+                }
+
+                // Center - Canvas
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    ZoneCanvas(
+                        zone = currentZone,
+                        zoomLevel = zoomLevel,
+                        onZoneChanged = { newZone ->
+                            currentZone = newZone
+                        },
+                        onRoomSelected = { room ->
+                            selectedRoom = room
+                        },
+                        selectedRoom = selectedRoom
+                    )
+                }
+
+                // Right panel - Room Editor
+                Surface(
+                    modifier = Modifier
+                        .width(300.dp)
+                        .fillMaxHeight()
+                        .border(1.dp, Color.LightGray)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text("Room Properties", style = MaterialTheme.typography.titleMedium)
+                        
+                        if (selectedRoom != null) {
+                            OutlinedTextField(
+                                value = selectedRoom!!.name,
+                                onValueChange = { newName ->
+                                    val updatedRoom = selectedRoom!!.copy(name = newName)
+                                    currentZone = currentZone.copy(
+                                        rooms = currentZone.rooms.map { 
+                                            if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                        }
+                                    )
+                                    selectedRoom = updatedRoom
+                                },
+                                label = { Text("Name") },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                            )
+                            
+                            OutlinedTextField(
+                                value = selectedRoom!!.description,
+                                onValueChange = { newDesc ->
+                                    val updatedRoom = selectedRoom!!.copy(description = newDesc)
+                                    currentZone = currentZone.copy(
+                                        rooms = currentZone.rooms.map { 
+                                            if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                        }
+                                    )
+                                    selectedRoom = updatedRoom
+                                },
+                                label = { Text("Description") },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                minLines = 3
+                            )
+                        } else {
+                            Text("No room selected", color = Color.Gray)
+                        }
+                    }
+                }
+            }
         }
     }
 }

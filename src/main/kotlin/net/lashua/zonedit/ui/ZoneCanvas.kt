@@ -27,7 +27,9 @@ import kotlin.math.roundToInt
 fun ZoneCanvas(
     zone: Zone,
     zoomLevel: Float = 1f,
+    selectedRoom: Room? = null,
     onZoneChanged: (Zone) -> Unit,
+    onRoomSelected: (Room?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val horizontalScrollState = rememberScrollState()
@@ -145,7 +147,11 @@ fun ZoneCanvas(
                                 (100 * zoomLevel).dp,
                                 (100 * zoomLevel).dp
                             )
-                            .border(1.dp, Color.Black)
+                            .clickable { onRoomSelected(room) }
+                            .border(
+                                width = if (selectedRoom?.id == room.id) 2.dp else 1.dp,
+                                color = if (selectedRoom?.id == room.id) Color.Blue else Color.Black
+                            )
                             .padding((8 * zoomLevel).dp)
                             .pointerInput(Unit) {
                                 detectDragGestures { change, dragAmount ->
