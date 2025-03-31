@@ -25,6 +25,14 @@ fun ZoneEditor(
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
     
+    // Add this effect to update selectedRoom when rooms change
+    LaunchedEffect(currentZone) {
+        if (selectedRoom != null) {
+            // Update selected room reference if it still exists in the zone
+            selectedRoom = currentZone.rooms.find { it.id == selectedRoom?.id }
+        }
+    }
+    
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
             // Toolbar
