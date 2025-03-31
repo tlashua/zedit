@@ -19,6 +19,8 @@ fun ZoneEditor(
     modifier: Modifier = Modifier
 ) {
     var currentZone by remember { mutableStateOf(zone) }
+    var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidth.toInt().toString()) }
+    var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeight.toInt().toString()) }
     var zoomLevel by remember { mutableStateOf(1f) }
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
@@ -93,6 +95,39 @@ fun ZoneEditor(
                         enabled = zoomLevel < 3f
                     ) {
                         Text("+")
+                    }
+
+                    // Add node size control
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("Node Size:")
+                        OutlinedTextField(
+                            value = nodeWidthText,
+                            onValueChange = { text ->
+                                nodeWidthText = text
+                                text.toIntOrNull()?.let { width ->
+                                    currentZone = currentZone.copy(nodeWidth = width.toFloat())
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true,
+                            label = { Text("W") }
+                        )
+                        Text("×")
+                        OutlinedTextField(
+                            value = nodeHeightText,
+                            onValueChange = { text ->
+                                nodeHeightText = text
+                                text.toIntOrNull()?.let { height ->
+                                    currentZone = currentZone.copy(nodeHeight = height.toFloat())
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true,
+                            label = { Text("H") }
+                        )
                     }
                 }
             }

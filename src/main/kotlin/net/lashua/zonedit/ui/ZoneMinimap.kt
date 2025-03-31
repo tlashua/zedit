@@ -65,8 +65,8 @@ fun ZoneMinimap(
                             room.position.y * scaleFactor
                         ),
                         size = androidx.compose.ui.geometry.Size(
-                            width = 100f * scaleFactor,
-                            height = 100f * scaleFactor
+                            width = zone.nodeWidth * scaleFactor,
+                            height = zone.nodeHeight * scaleFactor
                         )
                     )
                 }

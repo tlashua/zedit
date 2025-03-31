@@ -16,6 +16,8 @@ fun main() = application {
     val testZone = Zone(
         id = "test-zone",
         name = "Test Zone",
+        nodeWidth = 100f,
+        nodeHeight = 80f,
         rooms = listOf(
             Room(
                 id = "room1",

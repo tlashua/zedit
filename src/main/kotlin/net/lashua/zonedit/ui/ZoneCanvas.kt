@@ -145,12 +145,12 @@ fun ZoneCanvas(
                     Box(
                         modifier = Modifier
                             .offset { IntOffset(
-                                (position.x * zoomLevel).roundToInt(),
-                                (position.y * zoomLevel).roundToInt()
+                                (position.x * density * zoomLevel).roundToInt(),
+                                (position.y * density * zoomLevel).roundToInt()
                             )}
                             .size(
-                                (100 * zoomLevel).dp,
-                                (100 * zoomLevel).dp
+                                (zone.nodeWidth * zoomLevel).dp,
+                                (zone.nodeHeight * zoomLevel).dp
                             )
                             .clickable { onRoomSelected(room) }
                             .border(
@@ -163,9 +163,9 @@ fun ZoneCanvas(
                                     change.consume()
                                     
                                     val newX = (position.x + dragAmount.x / (density * zoomLevel))
-                                        .coerceIn(0f, (canvasSize.x / density) - 100f)
+                                        .coerceIn(0f, (canvasSize.x / density) - zone.nodeWidth)
                                     val newY = (position.y + dragAmount.y / (density * zoomLevel))
-                                        .coerceIn(0f, (canvasSize.y / density) - 100f)
+                                        .coerceIn(0f, (canvasSize.y / density) - zone.nodeHeight)
                                     
                                     position = Offset(newX, newY)
                                     
