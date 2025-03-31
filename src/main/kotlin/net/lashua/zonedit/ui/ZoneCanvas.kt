@@ -433,54 +433,62 @@ private fun DrawScope.drawConnections(
         // For UP/DOWN and EAST/WEST, draw from the room with lower ID
         // For NORTH/SOUTH, draw from the room with higher Y coordinate
         if (when (exitDir) {
-            ExitDirection.UP, ExitDirection.DOWN, 
-            ExitDirection.EAST, ExitDirection.WEST -> destId < room.id
-            ExitDirection.NORTH, ExitDirection.SOUTH -> destRoom.position.y < room.position.y
+            ExitDirection.NORTH, ExitDirection.SOUTH -> room.position.y >= destRoom.position.y
+            ExitDirection.EAST, ExitDirection.WEST, 
+            ExitDirection.UP, ExitDirection.DOWN -> room.id <= destRoom.id
         }) {
-            continue
+            val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
+            
+            // Get the correct source and destination points based on direction
+            val sourcePoint = when (exitDir) {
+                ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
+                ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
+                ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
+                ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
+                ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)
+                ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom)
+            }
+            
+            val destPoint = when (exitDir) {
+                ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)
+                ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
+                ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
+                ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
+                ExitDirection.UP -> Offset(destRect.left, destRect.bottom)
+                ExitDirection.DOWN -> Offset(destRect.left, destRect.top)
+            }
+            
+            val connectionColor = when (exitDir) {
+                ExitDirection.UP, ExitDirection.DOWN -> Color.Green
+                else -> Color.Gray
+            }
+            
+            // Draw the main line
+            drawLine(
+                color = connectionColor,
+                start = sourcePoint,
+                end = destPoint,
+                strokeWidth = 2f * zoomLevel
+            )
+            
+            // Draw arrows at both ends for all directions
+            val arrowLength = 20f * zoomLevel
+            val arrowAngle = (kotlin.math.PI / 6).toFloat()
+            
+            // Arrow at destination end
+            val angleToDestination = kotlin.math.atan2(
+                (destPoint.y - sourcePoint.y),
+                (destPoint.x - sourcePoint.x)
+            )
+            drawArrow(destPoint, angleToDestination, arrowLength, arrowAngle, zoomLevel, connectionColor)
+            
+            // Arrow at source end
+            val angleToSource = kotlin.math.atan2(
+                (sourcePoint.y - destPoint.y),
+                (sourcePoint.x - destPoint.x)
+            )
+            drawArrow(sourcePoint, angleToSource, arrowLength, arrowAngle, zoomLevel, connectionColor)
         }
-        
-        val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
-        
-        val sourcePoint = when (exitDir) {
-            ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
-            ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
-            ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
-            ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)
-            ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom)
-        }
-        
-        val destPoint = when (exitDir) {
-            ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)
-            ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
-            ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
-            ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
-            ExitDirection.UP -> Offset(destRect.left, destRect.bottom)
-            ExitDirection.DOWN -> Offset(destRect.left, destRect.top)
-        }
-        
-        val connectionColor = when (exitDir) {
-            ExitDirection.UP, ExitDirection.DOWN -> Color.Green
-            else -> Color.Gray
-        }
-        
-        drawLine(
-            color = connectionColor,
-            start = sourcePoint,
-            end = destPoint,
-            strokeWidth = 2f * zoomLevel
-        )
-        
-        // Draw arrow
-        val arrowLength = 20f * zoomLevel
-        val arrowAngle = (kotlin.math.PI / 6).toFloat()
-        val angle = kotlin.math.atan2(
-            (destPoint.y - sourcePoint.y),
-            (destPoint.x - sourcePoint.x)
-        )
-        
-        drawArrow(destPoint, angle, arrowLength, arrowAngle, zoomLevel, connectionColor)
     }
 }
 
