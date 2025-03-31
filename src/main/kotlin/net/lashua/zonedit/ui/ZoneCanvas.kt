@@ -139,16 +139,16 @@ fun ZoneCanvas(
                                 (position.x * density).roundToInt(),
                                 (position.y * density).roundToInt()
                             )}
-                            .size(200.dp, 100.dp)  // Changed to 200x100 dp
+                            .size(100.dp, 100.dp)  // Changed to 100x100 dp
                             .border(1.dp, Color.Black)
                             .padding(8.dp)
                             .pointerInput(Unit) {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     
-                                    // Adjust coerceIn to account for 200x100 box size
+                                    // Adjust coerceIn to account for box size
                                     val newX = (position.x + dragAmount.x / density)
-                                        .coerceIn(0f, canvasSize.x - 200f)
+                                        .coerceIn(0f, canvasSize.x - 100f)  // Changed to 100
                                     val newY = (position.y + dragAmount.y / density)
                                         .coerceIn(0f, canvasSize.y - 100f)  // Changed to 100
                                     
