@@ -11,10 +11,10 @@ import kotlinx.serialization.Serializable
 data class ZoneFile(
     val name: String,
     val id: String,
-    val node_width: Float = 100f,
-    val node_height: Float = 60f,
+    val nodeWidth: Float = 100f,  // Changed from node_width
+    val nodeHeight: Float = 60f,   // Changed from node_height
     val rooms: List<SerializableRoom> = emptyList(),
-    val zone_attributes: Map<String, String> = emptyMap(),
+    val zoneAttributes: Map<String, String> = emptyMap(),  // Changed from zone_attributes
     val scripting: Map<String, String> = emptyMap()
 )
 
@@ -42,7 +42,7 @@ object ZoneSerializer {
             allowNullValues = true
         ),
         outputConfig = TomlOutputConfig(
-            indentation = "    "
+            indentation = "  " // Using 2 spaces for cleaner output
         )
     )
 
@@ -50,15 +50,17 @@ object ZoneSerializer {
         val zoneFile = ZoneFile(
             name = zone.name,
             id = zone.id,
-            node_width = zone.nodeWidth,
-            node_height = zone.nodeHeight,
+            nodeWidth = zone.nodeWidth,
+            nodeHeight = zone.nodeHeight,
             rooms = zone.rooms.map { room ->
                 SerializableRoom(
                     id = room.id,
                     name = room.name,
                     description = room.description,
                     position = SerializablePosition(room.position.x, room.position.y),
-                    exits = room.exits.mapKeys { it.key.name.lowercase() }
+                    exits = room.exits.entries.associate { (direction, destId) -> 
+                        direction.name.lowercase() to destId 
+                    }
                 )
             }
         )
@@ -67,21 +69,22 @@ object ZoneSerializer {
     }
 
     fun loadZone(file: File): Zone {
-        val zoneFile = toml.decodeFromString(ZoneFile.serializer(), file.readText())
+        val content = file.readText()
+        val zoneFile = toml.decodeFromString(ZoneFile.serializer(), content)
         
         return Zone(
             id = zoneFile.id,
             name = zoneFile.name,
-            nodeWidth = zoneFile.node_width,
-            nodeHeight = zoneFile.node_height,
+            nodeWidth = zoneFile.nodeWidth,
+            nodeHeight = zoneFile.nodeHeight,
             rooms = zoneFile.rooms.map { room ->
                 Room(
                     id = room.id,
                     name = room.name,
                     description = room.description,
                     position = Position(room.position.x, room.position.y),
-                    exits = room.exits.mapKeys { 
-                        ExitDirection.valueOf(it.key.uppercase())
+                    exits = room.exits.entries.associate { (direction, destId) -> 
+                        ExitDirection.valueOf(direction.uppercase()) to destId
                     }
                 )
             }
