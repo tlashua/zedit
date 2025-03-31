@@ -237,26 +237,8 @@ fun ZoneCanvas(
                                 val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
                                 val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
 
-                                // Only snap when we're close to a grid line
-                                val newPos = if (currentZone.snapToGrid) {
-                                    val snappedX = (rawX / currentZone.gridSize).roundToInt() * currentZone.gridSize
-                                    val snappedY = (rawY / currentZone.gridSize).roundToInt() * currentZone.gridSize
-                                    
-                                    // Calculate how far we are from grid lines
-                                    val distanceToGridX = abs(rawX - snappedX)
-                                    val distanceToGridY = abs(rawY - snappedY)
-                                    
-                                    // Snap only when very close to grid lines (15% of grid size)
-                                    // This makes it much easier to break free
-                                    val snapThreshold = currentZone.gridSize * 0.15f
-                                    
-                                    Position(
-                                        x = if (distanceToGridX < snapThreshold) snappedX else rawX,
-                                        y = if (distanceToGridY < snapThreshold) snappedY else rawY
-                                    )
-                                } else {
-                                    Position(rawX, rawY)
-                                }
+                                // During drag - no snapping at all while actively dragging
+                                val newPos = Position(rawX, rawY)
 
                                 lastPosition.value = Position(rawX, rawY)
 
@@ -349,6 +331,29 @@ fun ZoneCanvas(
                                 onZoneChanged(currentZone)
                             }
 
+                            draggedRoomId?.let { id ->
+                                val room = currentZone.rooms.first { it.id == id }
+                                val finalPos = if (currentZone.snapToGrid) {
+                                    val snappedX = (room.position.x / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                    val snappedY = (room.position.y / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                    
+                                    // Snap to nearest grid point only if within 50% of grid size
+                                    val snapThreshold = currentZone.gridSize * 0.5f
+                                    Position(
+                                        x = if (abs(room.position.x - snappedX) < snapThreshold) snappedX else room.position.x,
+                                        y = if (abs(room.position.y - snappedY) < snapThreshold) snappedY else room.position.y
+                                    )
+                                } else {
+                                    room.position
+                                }
+                                
+                                val updatedRooms = currentZone.rooms.map { r ->
+                                    if (r.id == id) r.copy(position = finalPos) else r
+                                }
+                                currentZone = currentZone.copy(rooms = updatedRooms)
+                                onZoneChanged(currentZone)
+                            }
+                            
                             connectionDragState = null
                             draggedRoomId = null
                         }
