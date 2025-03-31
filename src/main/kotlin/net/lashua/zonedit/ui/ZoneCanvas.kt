@@ -75,17 +75,16 @@ fun ZoneCanvas(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .horizontalScroll(horizontalScrollState)
                 .verticalScroll(verticalScrollState)
-                .size(canvasSize.x.dp, canvasSize.y.dp)
+                .size(canvasSize.x.dp, canvasSize.y.dp)  // Exact canvas size
                 .border(1.dp, Color.Red)
                 .drawBehind {
                     // Only convert to px for actual drawing operations
                     val gridSizePx = gridSize.toPx()
                     
                     // Draw vertical grid lines
-                    for (x in 0..gridLinesHorizontal) {
+                    repeat(gridLinesHorizontal + 1) { x ->
                         val isMajorLine = x % 10 == 0
                         drawLine(
                             color = if (isMajorLine) Color.Gray else Color.LightGray,
@@ -95,7 +94,7 @@ fun ZoneCanvas(
                         )
                     }
                     // Draw horizontal grid lines
-                    for (y in 0..gridLinesVertical) {
+                    repeat(gridLinesVertical + 1) { y ->
                         val isMajorLine = y % 10 == 0
                         drawLine(
                             color = if (isMajorLine) Color.Gray else Color.LightGray,
