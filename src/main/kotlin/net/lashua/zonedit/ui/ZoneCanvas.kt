@@ -430,6 +430,11 @@ private fun DrawScope.drawConnections(
     
     for ((exitDir, destId) in room.exits) {
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
+        // Only draw UP/DOWN connections from one side to avoid duplicates
+        if ((exitDir == ExitDirection.DOWN || exitDir == ExitDirection.UP) && destId < room.id) {
+            continue
+        }
+        
         val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
         
         // Get the correct source and destination points based on direction
@@ -438,8 +443,8 @@ private fun DrawScope.drawConnections(
             ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
             ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
             ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)      // Top-right corner
-            ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Bottom-right corner
+            ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)      // Back to corner
+            ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom) // Back to corner
         }
         
         val destPoint = when (exitDir) {
@@ -447,8 +452,8 @@ private fun DrawScope.drawConnections(
             ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
             ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
             ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
-            ExitDirection.UP -> Offset(destRect.left, destRect.bottom)    // Bottom-left corner for UP
-            ExitDirection.DOWN -> Offset(destRect.left, destRect.top)     // Top-left corner for DOWN
+            ExitDirection.UP -> Offset(destRect.left, destRect.bottom)    // Back to corner
+            ExitDirection.DOWN -> Offset(destRect.left, destRect.top)     // Back to corner
         }
         
         val connectionColor = when (exitDir) {
