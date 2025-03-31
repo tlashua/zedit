@@ -187,6 +187,7 @@ private fun DrawScope.drawRoom(
 ) {
     val rect = getRoomRect(room, zone, density, zoomLevel)
     
+    // Draw room background
     drawRect(
         color = Color.White,
         topLeft = rect.topLeft,
@@ -194,6 +195,7 @@ private fun DrawScope.drawRoom(
         style = Fill
     )
     
+    // Draw room border
     drawRect(
         color = if (isSelected) Color.Blue else Color.Black,
         topLeft = rect.topLeft,
@@ -201,6 +203,7 @@ private fun DrawScope.drawRoom(
         style = Stroke(width = if (isSelected) 2f else 1f)
     )
     
+    // Draw room name
     val textStyle = TextStyle(
         fontSize = (14 * zoomLevel).sp,
         color = Color.Black
@@ -212,6 +215,43 @@ private fun DrawScope.drawRoom(
         topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
         style = textStyle
     )
+    
+    // Draw connection points if selected
+    if (isSelected) {
+        val connectionPointSize = 12f * density * zoomLevel
+        
+        // North connection point
+        drawCircle(
+            color = Color.Blue,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.center.x, rect.top),
+            style = Fill
+        )
+        
+        // South connection point
+        drawCircle(
+            color = Color.Blue,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.center.x, rect.bottom),
+            style = Fill
+        )
+        
+        // East connection point
+        drawCircle(
+            color = Color.Blue,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.right, rect.center.y),
+            style = Fill
+        )
+        
+        // West connection point
+        drawCircle(
+            color = Color.Blue,
+            radius = connectionPointSize / 2,
+            center = Offset(rect.left, rect.center.y),
+            style = Fill
+        )
+    }
 }
 
 private fun DrawScope.drawGrid(gridSizePx: Float, zoomLevel: Float, size: Size) {
