@@ -88,19 +88,35 @@ fun ZoneCanvas(
                                 val roomRect = getRoomRect(selectedRoom, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
                                 
+                                println("Drag start at offset: $offset")
+                                println("Selected room rect: $roomRect")
+                                println("Connection point size: $connectionPointSize")
+                                
                                 val direction = when {
-                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.top), connectionPointSize) -> 
+                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.top), connectionPointSize) -> {
+                                        println("Near NORTH connection point")
                                         ExitDirection.NORTH
-                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.bottom), connectionPointSize) -> 
+                                    }
+                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.bottom), connectionPointSize) -> {
+                                        println("Near SOUTH connection point")
                                         ExitDirection.SOUTH
-                                    isNearPoint(offset, Offset(roomRect.right, roomRect.center.y), connectionPointSize) -> 
+                                    }
+                                    isNearPoint(offset, Offset(roomRect.right, roomRect.center.y), connectionPointSize) -> {
+                                        println("Near EAST connection point")
                                         ExitDirection.EAST
-                                    isNearPoint(offset, Offset(roomRect.left, roomRect.center.y), connectionPointSize) -> 
+                                    }
+                                    isNearPoint(offset, Offset(roomRect.left, roomRect.center.y), connectionPointSize) -> {
+                                        println("Near WEST connection point")
                                         ExitDirection.WEST
-                                    else -> null
+                                    }
+                                    else -> {
+                                        println("Not near any connection point")
+                                        null
+                                    }
                                 }
                                 
                                 if (direction != null) {
+                                    println("Starting connection drag: $direction")
                                     onConnectionStarted(selectedRoom, direction)
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = selectedRoom.id,
@@ -126,15 +142,14 @@ fun ZoneCanvas(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             
-                            // Handle connection drag
                             connectionDragState?.let { state ->
+                                println("Connection drag update: current point = ${state.currentPoint}, drag amount = $dragAmount")
                                 connectionDragState = state.copy(
                                     currentPoint = state.currentPoint + dragAmount
                                 )
-                                // Remove the return@detectDragGestures
                             } ?: run {
-                                // Handle room drag only if we're not handling a connection drag
                                 draggedRoomId?.let { id ->
+                                    println("Room drag update: id = $id, drag amount = $dragAmount")
                                     val modelDragX = dragAmount.x / (density * zoomLevel)
                                     val modelDragY = dragAmount.y / (density * zoomLevel)
                                     
@@ -160,6 +175,10 @@ fun ZoneCanvas(
                             }
                         },
                         onDragEnd = {
+                            println("Drag ended")
+                            println("Connection state: $connectionDragState")
+                            println("Dragged room id: $draggedRoomId")
+                            
                             connectionDragState?.let { state ->
                                 val finalPoint = state.currentPoint
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
