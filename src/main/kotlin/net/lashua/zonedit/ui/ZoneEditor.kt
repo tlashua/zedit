@@ -21,6 +21,8 @@ fun ZoneEditor(
     var currentZone by remember { mutableStateOf(zone) }
     var zoomLevel by remember { mutableStateOf(1f) }
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
+    var canvasWidth by remember { mutableStateOf(1000) }
+    var canvasHeight by remember { mutableStateOf(1000) }
     
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
@@ -50,7 +52,30 @@ fun ZoneEditor(
                         Text("Add Room")
                     }
 
-                    Text("Canvas: 1000 × 1000")
+                    // Canvas size controls
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("Canvas:")
+                        OutlinedTextField(
+                            value = canvasWidth.toString(),
+                            onValueChange = { 
+                                canvasWidth = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasWidth 
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true
+                        )
+                        Text("×")
+                        OutlinedTextField(
+                            value = canvasHeight.toString(),
+                            onValueChange = { 
+                                canvasHeight = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasHeight 
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true
+                        )
+                    }
                     
                     Spacer(Modifier.weight(1f))
                     
@@ -72,7 +97,7 @@ fun ZoneEditor(
                 }
             }
             
-            // Main content area
+            // Main content area with updated canvas size
             Row(modifier = Modifier.weight(1f)) {
                 // Left panel - Room List/Navigation (can be added later)
                 Surface(
@@ -87,7 +112,7 @@ fun ZoneEditor(
                     }
                 }
 
-                // Center - Canvas
+                // Center - Canvas with new size parameters
                 Surface(
                     modifier = Modifier
                         .weight(1f)
@@ -96,6 +121,8 @@ fun ZoneEditor(
                     ZoneCanvas(
                         zone = currentZone,
                         zoomLevel = zoomLevel,
+                        canvasWidth = canvasWidth,
+                        canvasHeight = canvasHeight,
                         onZoneChanged = { newZone ->
                             currentZone = newZone
                         },

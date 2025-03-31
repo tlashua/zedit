@@ -27,6 +27,8 @@ import kotlin.math.roundToInt
 fun ZoneCanvas(
     zone: Zone,
     zoomLevel: Float = 1f,
+    canvasWidth: Int = 1000,
+    canvasHeight: Int = 1000,
     selectedRoom: Room? = null,
     onZoneChanged: (Zone) -> Unit,
     onRoomSelected: (Room?) -> Unit,
@@ -37,12 +39,12 @@ fun ZoneCanvas(
     val density = LocalDensity.current.density
     
     val gridSize = (20 * zoomLevel).dp
-    val canvasMinSize = (1000 * zoomLevel).dp
+    val canvasMinSize = Offset(canvasWidth.toFloat(), canvasHeight.toFloat())
     
-    // Calculate canvas bounds based on room positions (in dp)
+    // Update bounds calculation to use new canvas size
     val bounds = remember(zone.rooms) {
         if (zone.rooms.isEmpty()) {
-            Pair(Offset.Zero, Offset(canvasMinSize.value, canvasMinSize.value))
+            Pair(Offset.Zero, Offset(canvasMinSize.x, canvasMinSize.y))
         } else {
             zone.rooms.fold(Pair(Offset.Zero, Offset.Zero)) { acc, room ->
                 Pair(
@@ -59,12 +61,11 @@ fun ZoneCanvas(
         }
     }
     
-    // Add padding and ensure minimum size (in dp)
-    // Round up to nearest grid size multiple to ensure grid lines align perfectly
-    val canvasSize = remember(bounds) {
+    // Update canvas size calculation
+    val canvasSize = remember(bounds, canvasWidth, canvasHeight) {
         Offset(
-            ceil(maxOf(bounds.second.x + 100f, canvasMinSize.value) / gridSize.value) * gridSize.value,
-            ceil(maxOf(bounds.second.y + 100f, canvasMinSize.value) / gridSize.value) * gridSize.value
+            ceil(maxOf(bounds.second.x + 100f, canvasMinSize.x) / gridSize.value) * gridSize.value,
+            ceil(maxOf(bounds.second.y + 100f, canvasMinSize.y) / gridSize.value) * gridSize.value
         )
     }
 
