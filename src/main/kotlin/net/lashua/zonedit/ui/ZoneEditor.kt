@@ -5,17 +5,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import net.lashua.zonedit.model.*
-import net.lashua.zonedit.io.ZoneSerializer
-import java.util.UUID
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import net.lashua.zonedit.io.ZoneSerializer
+import net.lashua.zonedit.model.Position
+import net.lashua.zonedit.model.Room
+import net.lashua.zonedit.model.RoomUtils
+import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.ui.components.ComboBox
 import org.slf4j.LoggerFactory
+import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
-import java.io.File
-import androidx.compose.ui.awt.ComposeWindow
-import net.lashua.zonedit.ui.components.ComboBox
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
@@ -31,10 +33,10 @@ fun ZoneEditor(
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
-    
+
     // File chooser state
     var fileChooser by remember { mutableStateOf<JFileChooser?>(null) }
-    
+
     // Initialize file chooser once
     LaunchedEffect(Unit) {
         fileChooser = JFileChooser().apply {
@@ -48,7 +50,7 @@ fun ZoneEditor(
         fileChooser?.let { chooser ->
             val window = ComposeWindow()
             log.debug("Starting SAVE operation")
-            
+
             val result = chooser.showSaveDialog(null)
             if (result == JFileChooser.APPROVE_OPTION) {
                 val file = chooser.selectedFile
@@ -60,7 +62,7 @@ fun ZoneEditor(
                             log.debug("Adding .zone extension. New path: ${it.absolutePath}")
                         }
                     } else file
-                    
+
                     log.debug("About to save zone with ${currentZone.rooms.size} rooms to: ${saveFile.absolutePath}")
                     ZoneSerializer.saveZone(currentZone, saveFile)
                     log.info("Successfully saved zone to ${saveFile.absolutePath}")
@@ -80,7 +82,7 @@ fun ZoneEditor(
         fileChooser?.let { chooser ->
             val window = ComposeWindow()
             log.debug("Starting OPEN operation")
-            
+
             val result = chooser.showOpenDialog(null)
             if (result == JFileChooser.APPROVE_OPTION) {
                 val file = chooser.selectedFile
@@ -106,7 +108,7 @@ fun ZoneEditor(
             window.dispose()
         }
     }
-    
+
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
             // Toolbar
@@ -129,7 +131,7 @@ fun ZoneEditor(
                         ) {
                             Text("Open")
                         }
-                        
+
                         Button(
                             onClick = { handleSaveOperation() }
                         ) {
@@ -158,7 +160,7 @@ fun ZoneEditor(
                             label = { Text("Zone Name") },
                             singleLine = true
                         )
-                        
+
                         Button(
                             onClick = {
                                 if (currentZone.rooms.isNotEmpty()) {
@@ -205,8 +207,8 @@ fun ZoneEditor(
                         Text("Canvas:")
                         OutlinedTextField(
                             value = canvasWidth.toString(),
-                            onValueChange = { 
-                                canvasWidth = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasWidth 
+                            onValueChange = {
+                                canvasWidth = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasWidth
                             },
                             modifier = Modifier.width(80.dp),
                             singleLine = true
@@ -214,16 +216,16 @@ fun ZoneEditor(
                         Text("×")
                         OutlinedTextField(
                             value = canvasHeight.toString(),
-                            onValueChange = { 
-                                canvasHeight = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasHeight 
+                            onValueChange = {
+                                canvasHeight = it.toIntOrNull()?.coerceIn(100, 10000) ?: canvasHeight
                             },
                             modifier = Modifier.width(80.dp),
                             singleLine = true
                         )
                     }
-                    
+
                     Spacer(Modifier.weight(1f))
-                    
+
                     // Zoom controls
                     IconButton(
                         onClick = { zoomLevel = (zoomLevel - 0.1f).coerceAtLeast(0.1f) },
@@ -231,9 +233,9 @@ fun ZoneEditor(
                     ) {
                         Text("−")
                     }
-                    
+
                     Text("${(zoomLevel * 100).toInt()}%")
-                    
+
                     IconButton(
                         onClick = { zoomLevel = (zoomLevel + 0.1f).coerceAtMost(3f) },
                         enabled = zoomLevel < 3f
@@ -325,7 +327,7 @@ fun ZoneEditor(
                     },
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 // Side panel for room details
                 Column(
                     modifier = Modifier
@@ -338,15 +340,15 @@ fun ZoneEditor(
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     if (selectedRoom != null) {
                         OutlinedTextField(
                             value = selectedRoom!!.name,
                             onValueChange = { newName ->
                                 val updatedRoom = selectedRoom!!.copy(name = newName)
                                 currentZone = currentZone.copy(
-                                    rooms = currentZone.rooms.map { 
-                                        if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                    rooms = currentZone.rooms.map {
+                                        if (it.id == selectedRoom!!.id) updatedRoom else it
                                     }
                                 )
                                 selectedRoom = updatedRoom
@@ -354,16 +356,16 @@ fun ZoneEditor(
                             label = { Text("Name") },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         OutlinedTextField(
                             value = selectedRoom!!.description,
                             onValueChange = { newDesc ->
                                 val updatedRoom = selectedRoom!!.copy(description = newDesc)
                                 currentZone = currentZone.copy(
-                                    rooms = currentZone.rooms.map { 
-                                        if (it.id == selectedRoom!!.id) updatedRoom else it 
+                                    rooms = currentZone.rooms.map {
+                                        if (it.id == selectedRoom!!.id) updatedRoom else it
                                     }
                                 )
                                 selectedRoom = updatedRoom
