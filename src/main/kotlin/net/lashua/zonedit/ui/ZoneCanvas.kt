@@ -356,52 +356,66 @@ private fun DrawScope.drawConnections(
     zoomLevel: Float
 ) {
     val sourceRect = getRoomRect(room, zone, density, zoomLevel)
-    val sourceCenter = Offset(
-        sourceRect.center.x,
-        sourceRect.center.y
-    )
     
-    for ((_, destId) in room.exits) {
+    for ((exitDir, destId) in room.exits) {
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
         val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
-        val destCenter = Offset(
-            destRect.center.x,
-            destRect.center.y
-        )
         
+        // Get the exit point based on direction
+        val sourcePoint = when (exitDir) {
+            ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
+            ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
+            ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
+            ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
+            ExitDirection.UP -> Offset(sourceRect.center.x, sourceRect.top)
+            ExitDirection.DOWN -> Offset(sourceRect.center.x, sourceRect.bottom)
+        }
+        
+        // Calculate the best entrance point on the target room
+        // This finds the closest edge point on the opposite side
+        val destPoint = when (exitDir) {
+            ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)  // Enter from bottom
+            ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)     // Enter from top
+            ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)     // Enter from left
+            ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)    // Enter from right
+            ExitDirection.UP -> Offset(destRect.center.x, destRect.bottom)     // Enter from bottom
+            ExitDirection.DOWN -> Offset(destRect.center.x, destRect.top)      // Enter from top
+        }
+        
+        // Draw the connection line
         drawLine(
             color = Color.Gray,
-            start = sourceCenter,
-            end = destCenter,
+            start = sourcePoint,
+            end = destPoint,
             strokeWidth = 2f * zoomLevel
         )
         
-        // Convert angles to Float
+        // Draw arrow near the destination point
         val arrowLength = 20f * zoomLevel
         val angle = kotlin.math.atan2(
-            (destCenter.y - sourceCenter.y),
-            (destCenter.x - sourceCenter.x)
+            (destPoint.y - sourcePoint.y),
+            (destPoint.x - sourcePoint.x)
         )
         val arrowAngle = (kotlin.math.PI / 6).toFloat() // 30 degrees
         
         val arrowPoint1 = Offset(
-            destCenter.x - arrowLength * kotlin.math.cos(angle - arrowAngle),
-            destCenter.y - arrowLength * kotlin.math.sin(angle - arrowAngle)
+            destPoint.x - arrowLength * kotlin.math.cos(angle - arrowAngle),
+            destPoint.y - arrowLength * kotlin.math.sin(angle - arrowAngle)
         )
         val arrowPoint2 = Offset(
-            destCenter.x - arrowLength * kotlin.math.cos(angle + arrowAngle),
-            destCenter.y - arrowLength * kotlin.math.sin(angle + arrowAngle)
+            destPoint.x - arrowLength * kotlin.math.cos(angle + arrowAngle),
+            destPoint.y - arrowLength * kotlin.math.sin(angle + arrowAngle)
         )
         
         drawLine(
             color = Color.Gray,
-            start = destCenter,
+            start = destPoint,
             end = arrowPoint1,
             strokeWidth = 2f * zoomLevel
         )
         drawLine(
             color = Color.Gray,
-            start = destCenter,
+            start = destPoint,
             end = arrowPoint2,
             strokeWidth = 2f * zoomLevel
         )
