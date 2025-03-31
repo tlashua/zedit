@@ -240,9 +240,10 @@ fun ZoneCanvas(
                                         canvasHeight.toFloat() - currentZone.nodeHeight
                                     )
                                     
-                                    // Create the new room
+                                    // Create the new room with zone-based ID
+                                    val nextNum = currentZone.getNextRoomNumber()
                                     val newRoom = Room(
-                                        id = UUID.randomUUID().toString(),
+                                        id = "${currentZone.name.lowercase()}$nextNum",
                                         name = "New Room",
                                         description = "Description",
                                         position = Position(modelX, modelY)
