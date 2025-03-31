@@ -106,9 +106,27 @@ fun ZoneEditor(
                         .fillMaxHeight()
                         .border(1.dp, Color.LightGray)
                 ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Room Navigator", style = MaterialTheme.typography.titleMedium)
-                        // Room list will go here
+                    Column(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween // This will push minimap to bottom
+                    ) {
+                        Column {
+                            Text("Room Navigator", style = MaterialTheme.typography.titleMedium)
+                            // Room list will go here
+                        }
+                        
+                        // Minimap at bottom
+                        Column {
+                            Text("Overview", style = MaterialTheme.typography.titleSmall)
+                            ZoneMinimap(
+                                zone = currentZone,
+                                canvasWidth = canvasWidth,
+                                canvasHeight = canvasHeight,
+                                minimapSize = 184  // 200 - 2*8dp padding
+                            )
+                        }
                     }
                 }
 
