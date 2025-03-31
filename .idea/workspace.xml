@@ -7,7 +7,6 @@
     <list default="true" id="f1a5420f-0be7-43d9-8146-a0bc5356d344" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneCanvas.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneEditor.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/ZoneEditor.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,6 +23,9 @@
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="Rx2pzSNH" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
   </component>
   <component name="ProjectCodeStyleSettingsMigration">
     <option name="version" value="2" />
@@ -50,7 +52,9 @@
     "last_opened_file_path": "/Users/tim/src/zonedit/src/main/kotlin/net/lashua/zonedit",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm"
+    "nodejs_package_manager_path": "npm",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "Errors"
   }
 }]]></component>
   <component name="RecentsManager">
