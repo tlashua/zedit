@@ -75,7 +75,7 @@ fun ZoneCanvas(
     }
 
     LaunchedEffect(zone) {
-        log.debug("ZoneCanvas - Zone updated: ${zone.rooms.map { it.id }}")
+        log.debug("ZoneCanvas - Zone updated: {}", zone.rooms.map { it.id })
         currentZone = zone
     }
 
@@ -191,7 +191,11 @@ fun ZoneCanvas(
                                 }
 
                                 if (direction.first != null) {
-                                    log.debug("Starting connection drag from ${currentSelectedRoom!!.id} in direction ${direction.first}")
+                                    log.debug(
+                                        "Starting connection drag from {} in direction {}",
+                                        currentSelectedRoom?.id,
+                                        direction.first
+                                    )
                                     connectionDragState = ConnectionDragState(
                                         sourceRoomId = currentSelectedRoom!!.id,
                                         direction = direction.first!!,
@@ -229,8 +233,12 @@ fun ZoneCanvas(
                                 val oldPos = room.position
 
                                 // Calculate new position first without snapping
-                                val rawX = (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
-                                val rawY = (oldPos.y + modelDragY).coerceIn(0f, canvasHeight.toFloat() - currentZone.nodeHeight)
+                                val rawX =
+                                    (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
+                                val rawY = (oldPos.y + modelDragY).coerceIn(
+                                    0f,
+                                    canvasHeight.toFloat() - currentZone.nodeHeight
+                                )
 
                                 // During drag - no snapping at all while actively dragging
                                 val newPos = Position(rawX, rawY)
@@ -246,8 +254,8 @@ fun ZoneCanvas(
                         },
                         onDragEnd = {
                             log.debug("=== Drag End ===")
-                            log.debug("Final connection state: $connectionDragState")
-                            log.debug("Final dragged room: $draggedRoomId")
+                            log.debug("Final connection state: {}", connectionDragState)
+                            log.debug("Final dragged room: {}", draggedRoomId)
 
                             connectionDragState?.let { state ->
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
@@ -283,7 +291,7 @@ fun ZoneCanvas(
                                     onZoneChanged(currentZone)
                                 } else {
                                     // Create new room at drop location
-                                    val sourceRoom = currentZone.rooms.find { it.id == state.sourceRoomId }!!
+//                                    val sourceRoom = currentZone.rooms.find { it.id == state.sourceRoomId }!!
 
                                     // Convert screen coordinates back to model coordinates
                                     val modelX = (state.currentPoint.x / (density * zoomLevel)).coerceIn(
@@ -329,9 +337,11 @@ fun ZoneCanvas(
                             draggedRoomId?.let { id ->
                                 val room = currentZone.rooms.first { it.id == id }
                                 val finalPos = if (currentZone.snapToGrid) {
-                                    val snappedX = (room.position.x / currentZone.gridSize).roundToInt() * currentZone.gridSize
-                                    val snappedY = (room.position.y / currentZone.gridSize).roundToInt() * currentZone.gridSize
-                                    
+                                    val snappedX =
+                                        (room.position.x / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                    val snappedY =
+                                        (room.position.y / currentZone.gridSize).roundToInt() * currentZone.gridSize
+
                                     // Snap to nearest grid point only if within 50% of grid size
                                     val snapThreshold = currentZone.gridSize * 0.5f
                                     Position(
@@ -341,14 +351,14 @@ fun ZoneCanvas(
                                 } else {
                                     room.position
                                 }
-                                
+
                                 val updatedRooms = currentZone.rooms.map { r ->
                                     if (r.id == id) r.copy(position = finalPos) else r
                                 }
                                 currentZone = currentZone.copy(rooms = updatedRooms)
                                 onZoneChanged(currentZone)
                             }
-                            
+
                             connectionDragState = null
                             draggedRoomId = null
                         }
@@ -423,7 +433,7 @@ private fun DrawScope.drawRoom(
     textMeasurer: TextMeasurer
 ) {
     val rect = getRoomRect(room, zone, density, zoomLevel)
-    
+
     // Only attempt to draw if the room has positive dimensions
     if (rect.width <= 0 || rect.height <= 0) return
 
@@ -449,17 +459,17 @@ private fun DrawScope.drawRoom(
             // Create base font sizes
             val nameFontSize = (14 * zoomLevel).sp
             val idFontSize = (10 * zoomLevel).sp
-            
+
             // Measure text dimensions
             val nameStyle = TextStyle(fontSize = nameFontSize, color = Color.Black)
             val idStyle = TextStyle(fontSize = idFontSize, color = Color.Gray)
-            
+
             val nameMeasure = textMeasurer.measure(room.name, nameStyle)
             val idMeasure = textMeasurer.measure(room.id, idStyle)
-            
+
             // Calculate vertical spacing between name and id
             val verticalSpacing = 4f * zoomLevel
-            
+
             // Draw name
             drawText(
                 textMeasurer = textMeasurer,
@@ -696,31 +706,4 @@ private fun isNearPoint(point: Offset, target: Offset, threshold: Float): Boolea
                 (point.y - target.y) * (point.y - target.y)
     )
     return distance <= threshold
-}
-
-private fun handleNormalSnapping(
-    rawX: Float, rawY: Float, velocity: Float, 
-    currentTime: Long, lastSnapTime: Long,
-    snapDelay: Long, velocityThreshold: Float,
-    snappedX: Float, snappedY: Float,
-    shouldSnapX: Boolean, shouldSnapY: Boolean,
-    smoothingFactor: Float
-): Position {
-    val x = if (velocity < velocityThreshold && 
-               currentTime - lastSnapTime > snapDelay && 
-               shouldSnapX) {
-        rawX * (1 - smoothingFactor) + snappedX * smoothingFactor
-    } else {
-        rawX
-    }
-    
-    val y = if (velocity < velocityThreshold && 
-               currentTime - lastSnapTime > snapDelay && 
-               shouldSnapY) {
-        rawY * (1 - smoothingFactor) + snappedY * smoothingFactor
-    } else {
-        rawY
-    }
-    
-    return Position(x, y)
 }

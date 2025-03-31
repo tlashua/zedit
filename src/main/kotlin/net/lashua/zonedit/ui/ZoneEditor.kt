@@ -68,8 +68,7 @@ fun ZoneEditor(
                     ZoneSerializer.saveZone(currentZone, saveFile)
                     log.info("Successfully saved zone to ${saveFile.absolutePath}")
                 } catch (e: Exception) {
-                    log.error("Save operation failed", e)
-                    log.error("Failed path: ${file.absolutePath}")
+                    log.error("Failed path: {}", file.absolutePath, e)
                     e.printStackTrace()
                 }
             } else {
@@ -140,7 +139,7 @@ fun ZoneEditor(
                         }
                     }
 
-                    Divider(
+                    HorizontalDivider(
                         modifier = Modifier
                             .height(32.dp)
                             .width(1.dp)
@@ -174,7 +173,7 @@ fun ZoneEditor(
                         }
                     }
 
-                    Divider(
+                    HorizontalDivider(
                         modifier = Modifier
                             .height(32.dp)
                             .width(1.dp)
