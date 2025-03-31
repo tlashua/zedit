@@ -5,6 +5,11 @@
         </encoder>
     </appender>
 
+    <!-- Package-specific logging configuration -->
+    <logger name="net.lashua" level="DEBUG"/>
+<!--    <logger name="net.lashua.zonedit.ui" level="TRACE"/>-->
+<!--    <logger name="net.lashua.zonedit.model" level="INFO"/>-->
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
