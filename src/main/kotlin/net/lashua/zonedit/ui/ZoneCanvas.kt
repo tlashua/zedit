@@ -139,7 +139,7 @@ fun ZoneCanvas(
             // Room rendering
             for (room in zone.rooms) {
                 key(room.id) {
-                    var position by remember(room.id) { 
+                    var position by remember(room.id, room.position) { 
                         mutableStateOf(Offset(room.position.x / density, room.position.y / density)) 
                     }
                     
