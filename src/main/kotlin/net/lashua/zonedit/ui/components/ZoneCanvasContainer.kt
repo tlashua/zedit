@@ -23,8 +23,8 @@ import net.lashua.zonedit.ui.ZoneCanvas
 fun ZoneCanvasContainer(
     zone: Zone,
     zoomLevel: Float,
-    canvasWidth: Int,
-    canvasHeight: Int,
+    canvasWidthDp: Float,
+    canvasHeightDp: Float,
     selectedRoom: Room?,
     onZoneChanged: (Zone) -> Unit,
     onRoomSelected: (Room?) -> Unit,
@@ -71,8 +71,8 @@ fun ZoneCanvasContainer(
                 ZoneCanvas(
                     zone = zone,
                     zoomLevel = zoomLevel,
-                    canvasWidth = canvasWidth,
-                    canvasHeight = canvasHeight,
+                    canvasWidthDp = canvasWidthDp.dp,
+                    canvasHeightDp = canvasHeightDp.dp,
                     selectedRoom = selectedRoom,
                     onZoneChanged = onZoneChanged,
                     onRoomSelected = onRoomSelected,

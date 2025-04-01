@@ -21,8 +21,8 @@ fun main() = application {
     val testZone = Zone(
         id = "scratchpad",
         name = "scratchpad",
-        nodeWidth = 100f,
-        nodeHeight = 60f
+        nodeWidthDp = 100f,
+        nodeHeightDp = 60f
     )
 
     Window(

@@ -36,13 +36,22 @@ fun ZoneEditor(
     modifier: Modifier = Modifier
 ) {
     var currentZone by remember { mutableStateOf(zone) }
-    var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidth.toInt().toString()) }
-    var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeight.toInt().toString()) }
+    var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidthDp.toInt().toString()) }
+    var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeightDp.toInt().toString()) }
     var zoomLevel by remember { mutableStateOf(1f) }
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
-    var canvasWidth by remember { mutableStateOf(1000) }
-    var canvasHeight by remember { mutableStateOf(1000) }
+    // Store width/height in dp
+    var canvasWidthDp by remember { mutableStateOf(1000f) }
+    var canvasHeightDp by remember { mutableStateOf(1000f) }
     var pointerPosition by remember { mutableStateOf<Offset?>(null) }
+    
+    // UI text fields should show grid counts for user convenience
+    var widthGrids by remember { 
+        mutableStateOf((canvasWidthDp / currentZone.gridSizeDp).toInt()) 
+    }
+    var heightGrids by remember { 
+        mutableStateOf((canvasHeightDp / currentZone.gridSizeDp).toInt()) 
+    }
 
     val splitPaneState = rememberSplitPaneState(initialPositionPercentage = 0.7f)
 
@@ -104,8 +113,8 @@ fun ZoneEditor(
                         return@let
                     }
                     currentZone = ZoneSerializer.loadZone(file)
-                    nodeWidthText = currentZone.nodeWidth.toInt().toString()
-                    nodeHeightText = currentZone.nodeHeight.toInt().toString()
+                    nodeWidthText = currentZone.nodeWidthDp.toInt().toString()
+                    nodeHeightText = currentZone.nodeHeightDp.toInt().toString()
                     selectedRoom = null
                     log.info("Successfully loaded zone from ${file.absolutePath}")
                 } catch (e: Exception) {
@@ -180,7 +189,7 @@ fun ZoneEditor(
                             onValueChange = { text ->
                                 nodeWidthText = text
                                 text.toIntOrNull()?.let { width ->
-                                    currentZone = currentZone.copy(nodeWidth = width.toFloat())
+                                    currentZone = currentZone.copy(nodeWidthDp = width.toFloat())
                                 }
                             },
                             modifier = Modifier.width(80.dp),
@@ -192,7 +201,7 @@ fun ZoneEditor(
                             onValueChange = { text ->
                                 nodeHeightText = text
                                 text.toIntOrNull()?.let { height ->
-                                    currentZone = currentZone.copy(nodeHeight = height.toFloat())
+                                    currentZone = currentZone.copy(nodeHeightDp = height.toFloat())
                                 }
                             },
                             modifier = Modifier.width(80.dp),
@@ -249,38 +258,35 @@ fun ZoneEditor(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        var widthGrids by remember { mutableStateOf((canvasWidth / currentZone.gridSize).toInt()) }
-                        var heightGrids by remember { mutableStateOf((canvasHeight / currentZone.gridSize).toInt()) }
-
                         GridDimensionField(
                             label = "Grid Width",
                             gridCount = widthGrids,
                             onGridCountChange = { gridCount ->
                                 widthGrids = gridCount
-                                canvasWidth = (gridCount * currentZone.gridSize).toInt()
+                                canvasWidthDp = gridCount * currentZone.gridSizeDp
                             },
                             modifier = Modifier.width(120.dp),
-                            minGrids = 1  // Allow any positive number
+                            minGrids = 1
                         )
                         GridDimensionField(
                             label = "Grid Height",
                             gridCount = heightGrids,
                             onGridCountChange = { gridCount ->
                                 heightGrids = gridCount
-                                canvasHeight = (gridCount * currentZone.gridSize).toInt()
+                                canvasHeightDp = gridCount * currentZone.gridSizeDp
                             },
                             modifier = Modifier.width(120.dp),
-                            minGrids = 1  // Allow any positive number
+                            minGrids = 1
                         )
                     }
 
                     // Optional: Grid size control
                     OutlinedTextField(
-                        value = currentZone.gridSize.toInt().toString(),
+                        value = currentZone.gridSizeDp.toInt().toString(),
                         onValueChange = { newSize ->
                             newSize.toIntOrNull()?.let { size ->
                                 if (size in 1..999) {
-                                    currentZone = currentZone.copy(gridSize = size.toFloat())
+                                    currentZone = currentZone.copy(gridSizeDp = size.toFloat())
                                 }
                             }
                         },
@@ -341,8 +347,8 @@ fun ZoneEditor(
                     ZoneCanvasContainer(
                         zone = currentZone,
                         zoomLevel = zoomLevel,
-                        canvasWidth = canvasWidth,
-                        canvasHeight = canvasHeight,
+                        canvasWidthDp = canvasWidthDp,
+                        canvasHeightDp = canvasHeightDp,
                         selectedRoom = selectedRoom,
                         onZoneChanged = { newZone: Zone ->
                             log.trace("Zone updated: {}", newZone.rooms.map { it.id })
@@ -363,7 +369,7 @@ fun ZoneEditor(
                 }
                 second(
                     // Calculate minimum size to prevent exposing canvas container
-                    minSize = (canvasWidth * zoomLevel).dp
+                    minSize = (canvasWidthDp * zoomLevel).dp
                 ) {
                     Surface(
                         modifier = Modifier
@@ -401,7 +407,7 @@ fun ZoneEditor(
                 ) {
                     // Left side status items
                     Text(
-                        "Canvas: ${canvasWidth}x${canvasHeight}",
+                        "Canvas: ${canvasWidthDp.toInt()}x${canvasHeightDp.toInt()}",
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(

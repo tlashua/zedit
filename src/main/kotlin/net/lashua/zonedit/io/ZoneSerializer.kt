@@ -52,8 +52,10 @@ object ZoneSerializer {
         val zoneFile = ZoneFile(
             name = zone.name,
             id = zone.id,
-            nodeWidth = zone.nodeWidth,
-            nodeHeight = zone.nodeHeight,
+            nodeWidth = zone.nodeWidthDp,
+            nodeHeight = zone.nodeHeightDp,
+            gridSize = zone.gridSizeDp,
+            snapToGrid = zone.snapToGrid,
             rooms = zone.rooms.map { room ->
                 SerializableRoom(
                     id = room.id,
@@ -112,8 +114,10 @@ object ZoneSerializer {
             return Zone(
                 id = zoneFile.id,
                 name = zoneFile.name,
-                nodeWidth = zoneFile.nodeWidth,
-                nodeHeight = zoneFile.nodeHeight,
+                nodeWidthDp = zoneFile.nodeWidth,
+                nodeHeightDp = zoneFile.nodeHeight,
+                gridSizeDp = zoneFile.gridSize,
+                snapToGrid = zoneFile.snapToGrid,
                 rooms = zoneFile.rooms.map { room ->
                     Room(
                         id = room.id,

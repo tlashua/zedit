@@ -1,11 +1,17 @@
 package net.lashua.zonedit.ui
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +29,7 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.lashua.zonedit.model.ExitDirection
@@ -46,13 +53,13 @@ private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneCanvas")
 fun ZoneCanvas(
     zone: Zone,
     zoomLevel: Float = 1f,
-    canvasWidth: Int = 1000,
-    canvasHeight: Int = 1000,
+    canvasWidthDp: Dp,
+    canvasHeightDp: Dp,
     selectedRoom: Room? = null,
     onZoneChanged: (Zone) -> Unit,
     onRoomSelected: (Room?) -> Unit,
     onConnectionStarted: (Room, ExitDirection) -> Unit = { _, _ -> },
-    onPointerPositionChanged: (Offset?) -> Unit = {},  // Changed to use Offset instead of Position
+    onPointerPositionChanged: (Offset?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current.density
@@ -66,14 +73,10 @@ fun ZoneCanvas(
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
     var lastPosition = remember { mutableStateOf<Position?>(null) }
-    var currentCanvasWidth by remember { mutableStateOf(canvasWidth) }
-    var currentCanvasHeight by remember { mutableStateOf(canvasHeight) }
 
-    // Update canvas dimensions when props change
-    LaunchedEffect(canvasWidth, canvasHeight) {
-        log.debug("Canvas dimensions updated - width: {}, height: {}", canvasWidth, canvasHeight)
-        currentCanvasWidth = canvasWidth
-        currentCanvasHeight = canvasHeight
+    LaunchedEffect(canvasWidthDp, canvasHeightDp) {
+        log.debug("Canvas dimensions updated - width: {}dp, height: {}dp", 
+            canvasWidthDp.value, canvasHeightDp.value)
     }
 
     LaunchedEffect(selectedRoom) {
@@ -94,10 +97,7 @@ fun ZoneCanvas(
     ) {
         Canvas(
             modifier = Modifier
-                .size(
-                    (canvasWidth * zoomLevel).dp,
-                    (canvasHeight * zoomLevel).dp
-                )
+                .size(canvasWidthDp, canvasHeightDp)
                 .border(
                     width = 2.dp,
                     color = MaterialTheme.colorScheme.outline
@@ -107,13 +107,12 @@ fun ZoneCanvas(
                         while (true) {
                             val event = awaitPointerEvent()
                             val position = event.changes.firstOrNull()?.position
-                            onPointerPositionChanged(position)  // Pass the Offset directly
+                            onPointerPositionChanged(position)
                         }
                     }
                 }
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                        // Only handle taps if we're not dragging
                         if (draggedRoomId == null && connectionDragState == null) {
                             val clickedRoom = currentZone.rooms.firstOrNull { room ->
                                 val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
@@ -254,19 +253,19 @@ fun ZoneCanvas(
 
                                 // Calculate new position first without snapping
                                 val rawX =
-                                    (oldPos.x + modelDragX).coerceIn(0f, currentCanvasWidth.toFloat() - currentZone.nodeWidth)
+                                    (oldPos.x + modelDragX).coerceIn(0f, canvasWidthDp.value - zone.nodeWidthDp)
                                 val rawY = (oldPos.y + modelDragY).coerceIn(
                                     0f,
-                                    currentCanvasHeight.toFloat() - currentZone.nodeHeight
+                                    canvasHeightDp.value - zone.nodeHeightDp
                                 )
 
                                 log.debug(
                                     "Drag position - Old: ({}, {}), Raw new: ({}, {}), Current Canvas: {}x{}, Original Canvas: {}x{}, Node: {}x{}, Zoom: {}",
                                     oldPos.x, oldPos.y,
                                     rawX, rawY,
-                                    currentCanvasWidth, currentCanvasHeight,
-                                    canvasWidth, canvasHeight,
-                                    currentZone.nodeWidth, currentZone.nodeHeight,
+                                    canvasWidthDp.value, canvasHeightDp.value,
+                                    canvasWidthDp, canvasHeightDp,
+                                    zone.nodeWidthDp, zone.nodeHeightDp,
                                     zoomLevel
                                 )
 
@@ -321,13 +320,13 @@ fun ZoneCanvas(
                                     onZoneChanged(currentZone)
                                 } else {
                                     // Create new room at drop location
-                                    log.debug("Creating new room. Canvas dimensions: {}x{}", currentCanvasWidth, currentCanvasHeight)
+                                    log.debug("Creating new room. Canvas dimensions: {}x{}", canvasWidthDp.value, canvasHeightDp.value)
                                     
                                     val modelX = (state.currentPoint.x / (density * zoomLevel)).also { 
                                         log.debug("Raw modelX before clamping: {}", it) 
                                     }.coerceIn(
                                         0f,
-                                        currentCanvasWidth.toFloat() - currentZone.nodeWidth
+                                        canvasWidthDp.value - zone.nodeWidthDp
                                     ).also { 
                                         log.debug("Clamped modelX: {}", it) 
                                     }
@@ -336,7 +335,7 @@ fun ZoneCanvas(
                                         log.debug("Raw modelY before clamping: {}", it) 
                                     }.coerceIn(
                                         0f,
-                                        currentCanvasHeight.toFloat() - currentZone.nodeHeight
+                                        canvasHeightDp.value - zone.nodeHeightDp
                                     ).also { 
                                         log.debug("Clamped modelY: {}", it) 
                                     }
@@ -378,12 +377,12 @@ fun ZoneCanvas(
                                 val room = currentZone.rooms.first { it.id == id }
                                 val finalPos = if (currentZone.snapToGrid) {
                                     val snappedX =
-                                        (room.position.x / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                        (room.position.x / currentZone.gridSizeDp).roundToInt() * currentZone.gridSizeDp
                                     val snappedY =
-                                        (room.position.y / currentZone.gridSize).roundToInt() * currentZone.gridSize
+                                        (room.position.y / currentZone.gridSizeDp).roundToInt() * currentZone.gridSizeDp
 
                                     // Snap to nearest grid point only if within 50% of grid size
-                                    val snapThreshold = currentZone.gridSize * 0.5f
+                                    val snapThreshold = currentZone.gridSizeDp * 0.5f
                                     Position(
                                         x = if (abs(room.position.x - snappedX) < snapThreshold) snappedX else room.position.x,
                                         y = if (abs(room.position.y - snappedY) < snapThreshold) snappedY else room.position.y
@@ -455,8 +454,8 @@ private fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float
     // Convert model coordinates to screen coordinates
     val screenX = room.position.x * density * zoomLevel
     val screenY = room.position.y * density * zoomLevel
-    val width = zone.nodeWidth * density * zoomLevel
-    val height = zone.nodeHeight * density * zoomLevel
+    val width = zone.nodeWidthDp * density * zoomLevel
+    val height = zone.nodeHeightDp * density * zoomLevel
 
     return Rect(
         offset = Offset(screenX, screenY),
