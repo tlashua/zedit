@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.Offset
 import net.lashua.zonedit.model.ExitDirection
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Zone
@@ -28,6 +29,7 @@ fun ZoneCanvasContainer(
     onZoneChanged: (Zone) -> Unit,
     onRoomSelected: (Room?) -> Unit,
     onConnectionStarted: (Room, ExitDirection) -> Unit,
+    onPointerPositionChanged: (Offset?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -75,6 +77,7 @@ fun ZoneCanvasContainer(
                     onZoneChanged = onZoneChanged,
                     onRoomSelected = onRoomSelected,
                     onConnectionStarted = onConnectionStarted,
+                    onPointerPositionChanged = onPointerPositionChanged,
                     modifier = Modifier
                 )
             }

@@ -1,14 +1,12 @@
 package net.lashua.zonedit.ui
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -54,6 +52,7 @@ fun ZoneCanvas(
     onZoneChanged: (Zone) -> Unit,
     onRoomSelected: (Room?) -> Unit,
     onConnectionStarted: (Room, ExitDirection) -> Unit = { _, _ -> },
+    onPointerPositionChanged: (Offset?) -> Unit = {},  // Changed to use Offset instead of Position
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current.density
@@ -99,6 +98,19 @@ fun ZoneCanvas(
                     (canvasWidth * zoomLevel).dp,
                     (canvasHeight * zoomLevel).dp
                 )
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val position = event.changes.firstOrNull()?.position
+                            onPointerPositionChanged(position)  // Pass the Offset directly
+                        }
+                    }
+                }
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         // Only handle taps if we're not dragging

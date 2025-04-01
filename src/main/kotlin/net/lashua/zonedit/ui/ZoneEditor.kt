@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,6 +42,7 @@ fun ZoneEditor(
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
+    var pointerPosition by remember { mutableStateOf<Offset?>(null) }
 
     val splitPaneState = rememberSplitPaneState(initialPositionPercentage = 0.7f)
 
@@ -353,6 +355,9 @@ fun ZoneEditor(
                         onConnectionStarted = { room: Room, direction: ExitDirection ->
                             log.debug("Connection started from {} in direction {}", room.id, direction)
                         },
+                        onPointerPositionChanged = { offset ->
+                            pointerPosition = offset
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -391,7 +396,7 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Example status items
+                    // Left side status items
                     Text(
                         "Canvas: ${canvasWidth}x${canvasHeight}",
                         style = MaterialTheme.typography.bodySmall
@@ -404,10 +409,16 @@ fun ZoneEditor(
                         "Rooms: ${currentZone.rooms.size}",
                         style = MaterialTheme.typography.bodySmall
                     )
+                    pointerPosition?.let { pos ->
+                        Text(
+                            "Position: (${pos.x.toInt()}, ${pos.y.toInt()})",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                     
                     Spacer(Modifier.weight(1f))
                     
-                    // Right-aligned status items
+                    // Right side status items
                     Text(
                         "Grid: ${if (currentZone.snapToGrid) "On" else "Off"}",
                         style = MaterialTheme.typography.bodySmall
