@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ fun ZoneEditor(
     zone: Zone,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
     var currentZone by remember { mutableStateOf(zone) }
     var nodeWidthText by remember { mutableStateOf(currentZone.nodeWidthDp.toInt().toString()) }
     var nodeHeightText by remember { mutableStateOf(currentZone.nodeHeightDp.toInt().toString()) }
@@ -45,13 +47,9 @@ fun ZoneEditor(
     var canvasHeightDp by remember { mutableStateOf(1000f) }
     var pointerPosition by remember { mutableStateOf<Offset?>(null) }
     
-    // UI text fields should show grid counts for user convenience
-    var widthGrids by remember { 
-        mutableStateOf((canvasWidthDp / currentZone.gridSizeDp).toInt()) 
-    }
-    var heightGrids by remember { 
-        mutableStateOf((canvasHeightDp / currentZone.gridSizeDp).toInt()) 
-    }
+    // Calculate grid counts for display only
+    val widthGrids = (canvasWidthDp / currentZone.gridSizeDp).toInt()
+    val heightGrids = (canvasHeightDp / currentZone.gridSizeDp).toInt()
 
     val splitPaneState = rememberSplitPaneState(initialPositionPercentage = 0.7f)
 
@@ -262,7 +260,6 @@ fun ZoneEditor(
                             label = "Grid Width",
                             gridCount = widthGrids,
                             onGridCountChange = { gridCount ->
-                                widthGrids = gridCount
                                 canvasWidthDp = gridCount * currentZone.gridSizeDp
                             },
                             modifier = Modifier.width(120.dp),
@@ -272,7 +269,6 @@ fun ZoneEditor(
                             label = "Grid Height",
                             gridCount = heightGrids,
                             onGridCountChange = { gridCount ->
-                                heightGrids = gridCount
                                 canvasHeightDp = gridCount * currentZone.gridSizeDp
                             },
                             modifier = Modifier.width(120.dp),

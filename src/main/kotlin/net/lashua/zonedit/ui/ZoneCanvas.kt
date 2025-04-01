@@ -245,8 +245,8 @@ fun ZoneCanvas(
                                 )
                             } else if (draggedRoomId != null) {
                                 // Accumulate the drag amount before snapping
-                                val modelDragX = dragAmount.x / (density * zoomLevel)
-                                val modelDragY = dragAmount.y / (density * zoomLevel)
+                                val modelDragX = dragAmount.x / zoomLevel
+                                val modelDragY = dragAmount.y / zoomLevel
 
                                 val room = currentZone.rooms.first { it.id == draggedRoomId }
                                 val oldPos = room.position
@@ -451,9 +451,9 @@ fun ZoneCanvas(
 }
 
 private fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float): Rect {
-    // Convert model coordinates to screen coordinates
-    val screenX = room.position.x * density * zoomLevel
-    val screenY = room.position.y * density * zoomLevel
+    // Convert model coordinates (px) to screen coordinates
+    val screenX = room.position.x * zoomLevel
+    val screenY = room.position.y * zoomLevel
     val width = zone.nodeWidthDp * density * zoomLevel
     val height = zone.nodeHeightDp * density * zoomLevel
 
