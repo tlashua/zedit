@@ -33,41 +33,51 @@ fun ZoneCanvasContainer(
     Box(
         modifier = modifier
             .border(1.dp, MaterialTheme.colorScheme.outline)
-            .padding(start = 24.dp, top = 24.dp) // Space for rulers
     ) {
-        // Horizontal ruler
-        Canvas(
+        Box(
             modifier = Modifier
-                .height(24.dp)
-                .fillMaxWidth()
-                .align(Alignment.TopStart)
+                .padding(start = 24.dp, top = 24.dp) // Space for rulers
         ) {
-            // Draw ruler markings
-            // Implementation details for ruler...
-        }
+            // Horizontal ruler
+            Canvas(
+                modifier = Modifier
+                    .height(24.dp)
+                    .fillMaxWidth()
+                    .align(Alignment.TopStart)
+            ) {
+                // Draw ruler markings
+                // Implementation details for ruler...
+            }
 
-        // Vertical ruler
-        Canvas(
-            modifier = Modifier
-                .width(24.dp)
-                .fillMaxHeight()
-                .align(Alignment.TopStart)
-        ) {
-            // Draw ruler markings
-            // Implementation details for ruler...
-        }
+            // Vertical ruler
+            Canvas(
+                modifier = Modifier
+                    .width(24.dp)
+                    .fillMaxHeight()
+                    .align(Alignment.TopStart)
+            ) {
+                // Draw ruler markings
+                // Implementation details for ruler...
+            }
 
-        // Main canvas
-        ZoneCanvas(
-            zone = zone,
-            zoomLevel = zoomLevel,
-            canvasWidth = canvasWidth,
-            canvasHeight = canvasHeight,
-            selectedRoom = selectedRoom,
-            onZoneChanged = onZoneChanged,
-            onRoomSelected = onRoomSelected,
-            onConnectionStarted = onConnectionStarted,
-            modifier = Modifier.padding(start = 24.dp, top = 24.dp)
-        )
+            // Main canvas
+            Box(
+                modifier = Modifier
+                    .padding(start = 24.dp, top = 24.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                ZoneCanvas(
+                    zone = zone,
+                    zoomLevel = zoomLevel,
+                    canvasWidth = canvasWidth,
+                    canvasHeight = canvasHeight,
+                    selectedRoom = selectedRoom,
+                    onZoneChanged = onZoneChanged,
+                    onRoomSelected = onRoomSelected,
+                    onConnectionStarted = onConnectionStarted,
+                    modifier = Modifier
+                )
+            }
+        }
     }
 }
