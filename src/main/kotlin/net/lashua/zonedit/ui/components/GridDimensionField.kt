@@ -17,7 +17,8 @@ fun GridDimensionField(
     onGridCountChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
     minGrids: Int = 1,
-    maxGrids: Int = 500
+    maxGrids: Int = 500,
+    label: String = ""
 ) {
     var textValue by remember(gridCount) { mutableStateOf(gridCount.toString()) }
     
@@ -35,18 +36,19 @@ fun GridDimensionField(
                 }
             }
         },
+        label = { Text(label) },
         modifier = modifier,
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number,
             imeAction = ImeAction.Done
         ),
-        trailingIcon = {
-            Text(
-                "grids",
-                modifier = Modifier.padding(end = 8.dp),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
+//        trailingIcon = {
+//            Text(
+//                "grids",
+//                modifier = Modifier.padding(end = 8.dp),
+//                style = MaterialTheme.typography.bodySmall
+//            )
+//        }
     )
 }

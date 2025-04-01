@@ -195,17 +195,18 @@ fun ZoneEditor(
                     ) {
                         Text("Add Room")
                     }
+                    Spacer(Modifier.weight(1f))
 
                     // Canvas size controls
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text("Canvas Size:")
                         var widthGrids by remember { mutableStateOf((canvasWidth / currentZone.gridSize).toInt()) }
                         var heightGrids by remember { mutableStateOf((canvasHeight / currentZone.gridSize).toInt()) }
 
                         GridDimensionField(
+                            label = "Grid Width",
                             gridCount = widthGrids,
                             onGridCountChange = { gridCount ->
                                 widthGrids = gridCount
@@ -214,8 +215,8 @@ fun ZoneEditor(
                             modifier = Modifier.width(120.dp),
                             minGrids = 1  // Allow any positive number
                         )
-                        Text("×")
                         GridDimensionField(
+                            label = "Grid Height",
                             gridCount = heightGrids,
                             onGridCountChange = { gridCount ->
                                 heightGrids = gridCount
@@ -225,6 +226,41 @@ fun ZoneEditor(
                             minGrids = 1  // Allow any positive number
                         )
                     }
+
+                    // Optional: Grid size control
+                    OutlinedTextField(
+                        value = currentZone.gridSize.toInt().toString(),
+                        onValueChange = { newSize ->
+                            newSize.toIntOrNull()?.let { size ->
+                                if (size in 1..999) {
+                                    currentZone = currentZone.copy(gridSize = size.toFloat())
+                                }
+                            }
+                        },
+                        label = { Text("Grid Size") },
+                        modifier = Modifier.width(90.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        )
+                    )
+
+                    // Snap to Grid control
+                    Switch(
+                        checked = currentZone.snapToGrid,
+                        onCheckedChange = { snapEnabled ->
+                            currentZone = currentZone.copy(snapToGrid = snapEnabled)
+                            // If enabling snap, immediately snap all rooms to grid
+                            if (snapEnabled) {
+                                val snappedRooms = currentZone.rooms.map { room ->
+                                    room.copy(position = currentZone.snapPosition(room.position))
+                                }
+                                currentZone = currentZone.copy(rooms = snappedRooms)
+                            }
+                        }
+                    )
+                    Text("Snap to Grid")
 
                     Spacer(Modifier.weight(1f))
 
@@ -263,7 +299,7 @@ fun ZoneEditor(
                             singleLine = true,
                             label = { Text("W") }
                         )
-                        Text("×")
+
                         OutlinedTextField(
                             value = nodeHeightText,
                             onValueChange = { text ->
@@ -278,40 +314,6 @@ fun ZoneEditor(
                         )
                     }
 
-                    // Snap to Grid control
-                    Switch(
-                        checked = currentZone.snapToGrid,
-                        onCheckedChange = { snapEnabled ->
-                            currentZone = currentZone.copy(snapToGrid = snapEnabled)
-                            // If enabling snap, immediately snap all rooms to grid
-                            if (snapEnabled) {
-                                val snappedRooms = currentZone.rooms.map { room ->
-                                    room.copy(position = currentZone.snapPosition(room.position))
-                                }
-                                currentZone = currentZone.copy(rooms = snappedRooms)
-                            }
-                        }
-                    )
-                    Text("Snap to Grid")
-
-                    // Optional: Grid size control
-                    Text("Grid Size:")
-                    OutlinedTextField(
-                        value = currentZone.gridSize.toInt().toString(),
-                        onValueChange = { newSize ->
-                            newSize.toIntOrNull()?.let { size ->
-                                if (size in 1..999) {
-                                    currentZone = currentZone.copy(gridSize = size.toFloat())
-                                }
-                            }
-                        },
-                        modifier = Modifier.width(80.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        )
-                    )
                 }
             }
 
