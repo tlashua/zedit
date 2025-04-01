@@ -67,15 +67,23 @@ fun ZoneCanvas(
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
     var lastPosition = remember { mutableStateOf<Position?>(null) }
+    var currentCanvasWidth by remember { mutableStateOf(canvasWidth) }
+    var currentCanvasHeight by remember { mutableStateOf(canvasHeight) }
 
+    // Update canvas dimensions when props change
+    LaunchedEffect(canvasWidth, canvasHeight) {
+        log.debug("Canvas dimensions updated - width: {}, height: {}", canvasWidth, canvasHeight)
+        currentCanvasWidth = canvasWidth
+        currentCanvasHeight = canvasHeight
+    }
 
     LaunchedEffect(selectedRoom) {
         currentSelectedRoom = selectedRoom
-        log.debug("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
+        log.trace("ZoneCanvas - Selected room updated: ${selectedRoom?.id}")
     }
 
     LaunchedEffect(zone) {
-        log.debug("ZoneCanvas - Zone updated: {}", zone.rooms.map { it.id })
+        log.trace("ZoneCanvas - Zone updated: {}", zone.rooms.map { it.id })
         currentZone = zone
     }
 
@@ -234,10 +242,20 @@ fun ZoneCanvas(
 
                                 // Calculate new position first without snapping
                                 val rawX =
-                                    (oldPos.x + modelDragX).coerceIn(0f, canvasWidth.toFloat() - currentZone.nodeWidth)
+                                    (oldPos.x + modelDragX).coerceIn(0f, currentCanvasWidth.toFloat() - currentZone.nodeWidth)
                                 val rawY = (oldPos.y + modelDragY).coerceIn(
                                     0f,
-                                    canvasHeight.toFloat() - currentZone.nodeHeight
+                                    currentCanvasHeight.toFloat() - currentZone.nodeHeight
+                                )
+
+                                log.debug(
+                                    "Drag position - Old: ({}, {}), Raw new: ({}, {}), Current Canvas: {}x{}, Original Canvas: {}x{}, Node: {}x{}, Zoom: {}",
+                                    oldPos.x, oldPos.y,
+                                    rawX, rawY,
+                                    currentCanvasWidth, currentCanvasHeight,
+                                    canvasWidth, canvasHeight,
+                                    currentZone.nodeWidth, currentZone.nodeHeight,
+                                    zoomLevel
                                 )
 
                                 // During drag - no snapping at all while actively dragging
@@ -291,18 +309,28 @@ fun ZoneCanvas(
                                     onZoneChanged(currentZone)
                                 } else {
                                     // Create new room at drop location
-//                                    val sourceRoom = currentZone.rooms.find { it.id == state.sourceRoomId }!!
+                                    log.debug("Creating new room. Canvas dimensions: {}x{}", currentCanvasWidth, currentCanvasHeight)
+                                    
+                                    val modelX = (state.currentPoint.x / (density * zoomLevel)).also { 
+                                        log.debug("Raw modelX before clamping: {}", it) 
+                                    }.coerceIn(
+                                        0f,
+                                        currentCanvasWidth.toFloat() - currentZone.nodeWidth
+                                    ).also { 
+                                        log.debug("Clamped modelX: {}", it) 
+                                    }
+                                    
+                                    val modelY = (state.currentPoint.y / (density * zoomLevel)).also { 
+                                        log.debug("Raw modelY before clamping: {}", it) 
+                                    }.coerceIn(
+                                        0f,
+                                        currentCanvasHeight.toFloat() - currentZone.nodeHeight
+                                    ).also { 
+                                        log.debug("Clamped modelY: {}", it) 
+                                    }
 
-                                    // Convert screen coordinates back to model coordinates
-                                    val modelX = (state.currentPoint.x / (density * zoomLevel)).coerceIn(
-                                        0f,
-                                        canvasWidth.toFloat() - currentZone.nodeWidth
-                                    )
-                                    val modelY = (state.currentPoint.y / (density * zoomLevel)).coerceIn(
-                                        0f,
-                                        canvasHeight.toFloat() - currentZone.nodeHeight
-                                    )
                                     val snappedPos = currentZone.snapPosition(Position(modelX, modelY))
+                                    log.debug("Final snapped position: {}", snappedPos)
 
                                     // Create the new room with zone-based ID and snapped position
                                     val nextNum = currentZone.getNextRoomNumber()

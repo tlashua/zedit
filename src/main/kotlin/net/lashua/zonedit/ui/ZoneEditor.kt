@@ -320,11 +320,11 @@ fun ZoneEditor(
                     canvasHeight = canvasHeight,
                     selectedRoom = selectedRoom,
                     onZoneChanged = { newZone ->
-                        log.debug("Zone updated: {}", newZone.rooms.map { it.id })
+                        log.trace("Zone updated: {}", newZone.rooms.map { it.id })
                         currentZone = newZone
                     },
                     onRoomSelected = { room ->
-                        log.debug("Room selection changed to: {}", room?.id)
+                        log.trace("Room selection changed to: {}", room?.id)
                         selectedRoom = room
                     },
                     onConnectionStarted = { room, direction ->
