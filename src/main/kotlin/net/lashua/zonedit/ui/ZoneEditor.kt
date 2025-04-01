@@ -1,12 +1,15 @@
 package net.lashua.zonedit.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.io.ZoneSerializer
 import net.lashua.zonedit.model.Position
@@ -111,26 +114,7 @@ fun ZoneEditor(
 
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
-            // Zone name input at the top
-            Surface(
-                modifier = Modifier,  // Removed fillMaxWidth()
-                shadowElevation = 4.dp
-            ) {
-                OutlinedTextField(
-                    value = currentZone.name,
-                    onValueChange = { newName ->
-                        currentZone = currentZone.copy(name = newName.take(20))
-                    },
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .width(240.dp), // Width for exactly 20 characters
-                    label = { Text("Zone Name") },
-                    singleLine = true,
-                    maxLines = 1
-                )
-            }
-
-            // Toolbar
+            // Top bar with zone name and file operations
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 4.dp
@@ -140,32 +124,41 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // File operations
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Button(
-                            onClick = { handleOpenOperation() }
-                        ) {
-                            Text("Open")
-                        }
-
-                        Button(
-                            onClick = { handleSaveOperation() }
-                        ) {
-                            Text("Save")
-                        }
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .height(32.dp)
-                            .width(1.dp)
-                            .padding(horizontal = 8.dp)
+                    OutlinedTextField(
+                        value = currentZone.name,
+                        onValueChange = { newName ->
+                            currentZone = currentZone.copy(name = newName.take(20))
+                        },
+                        modifier = Modifier.width(240.dp),
+                        label = { Text("Zone Name") },
+                        singleLine = true,
+                        maxLines = 1
                     )
 
-                    // Renumber button
+                    Button(
+                        onClick = { handleOpenOperation() }
+                    ) {
+                        Text("Open")
+                    }
+
+                    Button(
+                        onClick = { handleSaveOperation() }
+                    ) {
+                        Text("Save")
+                    }
+                }
+            }
+
+            // Main toolbar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Button(
                         onClick = {
                             if (currentZone.rooms.isNotEmpty()) {
@@ -303,14 +296,21 @@ fun ZoneEditor(
 
                     // Optional: Grid size control
                     Text("Grid Size:")
-                    ComboBox(
-                        value = currentZone.gridSize.toString(),
+                    OutlinedTextField(
+                        value = currentZone.gridSize.toInt().toString(),
                         onValueChange = { newSize ->
-                            newSize.toFloatOrNull()?.let { size ->
-                                currentZone = currentZone.copy(gridSize = size)
+                            newSize.toIntOrNull()?.let { size ->
+                                if (size in 1..999) {
+                                    currentZone = currentZone.copy(gridSize = size.toFloat())
+                                }
                             }
                         },
-                        items = listOf("10", "20", "40")
+                        modifier = Modifier.width(80.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        )
                     )
                 }
             }
