@@ -8,6 +8,7 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.ui.ZoneEditor
+import net.lashua.zonedit.ui.theme.ZoneEditorTheme
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("net.lashua.zonedit.Main")
@@ -29,8 +30,10 @@ fun main() = application {
         title = "Zone Editor",
         state = windowState
     ) {
-        Surface {
-            ZoneEditor(zone = testZone)
+        ZoneEditorTheme {
+            Surface {
+                ZoneEditor(zone = testZone)
+            }
         }
     }
 }
