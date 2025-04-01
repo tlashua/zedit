@@ -183,8 +183,8 @@ fun ZoneEditor(
                             val nextNum = currentZone.getNextRoomNumber()
                             val newRoom = Room(
                                 id = RoomUtils.generateRoomId(currentZone, nextNum),
-                                name = "New Room",
-                                description = "Description",
+                                name = "",
+                                description = "",
                                 position = Position(100f, 100f)
                             )
                             currentZone = currentZone.copy(
