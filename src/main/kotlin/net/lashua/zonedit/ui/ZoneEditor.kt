@@ -146,24 +146,26 @@ fun ZoneEditor(
                     ) {
                         Text("Save")
                     }
-                }
-            }
 
-            // Main toolbar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 4.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+
+                    Button(
+                        onClick = {
+                            if (currentZone.rooms.isNotEmpty()) {
+                                currentZone = RoomUtils.renumberRooms(currentZone)
+                            }
+                        },
+                        enabled = currentZone.rooms.isNotEmpty()
+                    ) {
+                        Text("Renumber Rooms")
+                    }
+
                     // Node size controls
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        Spacer(Modifier.weight(1f))
+
                         Text("Room Size:")
                         OutlinedTextField(
                             value = nodeWidthText,
@@ -190,17 +192,20 @@ fun ZoneEditor(
                             label = { Text("H") }
                         )
                     }
-                    
-                    Button(
-                        onClick = {
-                            if (currentZone.rooms.isNotEmpty()) {
-                                currentZone = RoomUtils.renumberRooms(currentZone)
-                            }
-                        },
-                        enabled = currentZone.rooms.isNotEmpty()
-                    ) {
-                        Text("Renumber Rooms")
-                    }
+                }
+            }
+
+            // Main toolbar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
 
                     HorizontalDivider(
                         modifier = Modifier
@@ -314,7 +319,6 @@ fun ZoneEditor(
                     ) {
                         Text("+")
                     }
-
 
 
                 }
