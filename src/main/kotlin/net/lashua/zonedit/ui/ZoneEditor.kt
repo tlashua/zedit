@@ -363,10 +363,7 @@ fun ZoneEditor(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                second(
-                    // Calculate minimum size to prevent exposing canvas container
-                    minSize = (canvasWidthDp * zoomLevel).dp
-                ) {
+                second(minSize = 300.dp) {  // Fixed reasonable minimum size for details panel
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
