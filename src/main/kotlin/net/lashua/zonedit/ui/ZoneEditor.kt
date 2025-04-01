@@ -111,6 +111,25 @@ fun ZoneEditor(
 
     Surface(modifier = modifier.fillMaxSize()) {
         Column {
+            // Zone name input at the top
+            Surface(
+                modifier = Modifier,  // Removed fillMaxWidth()
+                shadowElevation = 4.dp
+            ) {
+                OutlinedTextField(
+                    value = currentZone.name,
+                    onValueChange = { newName ->
+                        currentZone = currentZone.copy(name = newName.take(20))
+                    },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .width(240.dp), // Width for exactly 20 characters
+                    label = { Text("Zone Name") },
+                    singleLine = true,
+                    maxLines = 1
+                )
+            }
+
             // Toolbar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -146,31 +165,16 @@ fun ZoneEditor(
                             .padding(horizontal = 8.dp)
                     )
 
-                    // Zone name input and renumber button
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // Renumber button
+                    Button(
+                        onClick = {
+                            if (currentZone.rooms.isNotEmpty()) {
+                                currentZone = RoomUtils.renumberRooms(currentZone)
+                            }
+                        },
+                        enabled = currentZone.rooms.isNotEmpty()
                     ) {
-                        OutlinedTextField(
-                            value = currentZone.name,
-                            onValueChange = { newName ->
-                                currentZone = currentZone.copy(name = newName.take(20))
-                            },
-                            modifier = Modifier.width(200.dp),
-                            label = { Text("Zone Name") },
-                            singleLine = true
-                        )
-
-                        Button(
-                            onClick = {
-                                if (currentZone.rooms.isNotEmpty()) {
-                                    currentZone = RoomUtils.renumberRooms(currentZone)
-                                }
-                            },
-                            enabled = currentZone.rooms.isNotEmpty()
-                        ) {
-                            Text("Renumber Rooms")
-                        }
+                        Text("Renumber Rooms")
                     }
 
                     HorizontalDivider(
