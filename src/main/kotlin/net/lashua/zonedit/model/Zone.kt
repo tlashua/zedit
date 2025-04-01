@@ -52,7 +52,9 @@ data class Room(
     val description: String,
     val position: Position,
     val exits: Map<ExitDirection, String> = emptyMap(),
-    val flags: List<String> = emptyList()
+    val exitCorners: Map<ExitDirection, String> = emptyMap(), // "LEFT" or "RIGHT" for UP/DOWN exits
+    val flags: List<String> = emptyList(),
+    val metadata: Map<String, String> = emptyMap()
 )
 
 data class Position(

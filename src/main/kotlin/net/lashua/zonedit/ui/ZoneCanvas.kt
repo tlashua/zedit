@@ -303,16 +303,26 @@ fun ZoneCanvas(
                                         ExitDirection.DOWN -> ExitDirection.UP
                                     }
 
+                                    // For UP/DOWN, use opposite corners for better visual connection
+                                    val sourceCorner = state.sourceCorner
+                                    val targetCorner = if (sourceCorner == "LEFT") "RIGHT" else "LEFT"
+
                                     val updatedRooms = currentZone.rooms.map { room ->
                                         when (room.id) {
                                             state.sourceRoomId -> room.copy(
-                                                exits = room.exits + (state.direction to targetRoom.id)
+                                                exits = room.exits + (state.direction to targetRoom.id),
+                                                exitCorners = when (state.direction) {
+                                                    ExitDirection.UP, ExitDirection.DOWN -> room.exitCorners + (state.direction to sourceCorner)
+                                                    else -> room.exitCorners
+                                                }
                                             )
-
                                             targetRoom.id -> room.copy(
-                                                exits = room.exits + (oppositeDirection to state.sourceRoomId)
+                                                exits = room.exits + (oppositeDirection to state.sourceRoomId),
+                                                exitCorners = when (oppositeDirection) {
+                                                    ExitDirection.UP, ExitDirection.DOWN -> room.exitCorners + (oppositeDirection to targetCorner)
+                                                    else -> room.exitCorners
+                                                }
                                             )
-
                                             else -> room
                                         }
                                     }
@@ -362,15 +372,33 @@ fun ZoneCanvas(
                                         ExitDirection.DOWN -> ExitDirection.UP
                                     }
 
+                                    // For UP/DOWN, use opposite corners for better visual connection
+                                    val sourceCorner = state.sourceCorner
+                                    val targetCorner = if (sourceCorner == "LEFT") "RIGHT" else "LEFT"
+
                                     val updatedRooms = currentZone.rooms.map { room ->
                                         if (room.id == state.sourceRoomId) {
-                                            room.copy(exits = room.exits + (state.direction to newRoom.id))
+                                            room.copy(
+                                                exits = room.exits + (state.direction to newRoom.id),
+                                                exitCorners = when (state.direction) {
+                                                    ExitDirection.UP, ExitDirection.DOWN -> 
+                                                        room.exitCorners + (state.direction to sourceCorner)
+                                                    else -> room.exitCorners
+                                                }
+                                            )
                                         } else room
-                                    } + newRoom.copy(exits = mapOf(oppositeDirection to state.sourceRoomId))
+                                    } + newRoom.copy(
+                                        exits = mapOf(oppositeDirection to state.sourceRoomId),
+                                        exitCorners = when (oppositeDirection) {
+                                            ExitDirection.UP, ExitDirection.DOWN -> 
+                                                mapOf(oppositeDirection to targetCorner)
+                                            else -> emptyMap()
+                                        }
+                                    )
 
                                     currentZone = currentZone.copy(rooms = updatedRooms)
+                                    onZoneChanged(currentZone)
                                 }
-                                onZoneChanged(currentZone)
                             }
 
                             draggedRoomId?.let { id ->
@@ -645,33 +673,76 @@ private fun DrawScope.drawConnections(
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
 
         // For all directions, only draw the connection once
-        // For UP/DOWN and EAST/WEST, draw from the room with lower ID
-        // For NORTH/SOUTH, draw from the room with higher Y coordinate
         if (when (exitDir) {
-                ExitDirection.NORTH, ExitDirection.SOUTH -> room.position.y >= destRoom.position.y
-                ExitDirection.EAST, ExitDirection.WEST,
-                ExitDirection.UP, ExitDirection.DOWN -> room.id <= destRoom.id
-            }
-        ) {
+            ExitDirection.NORTH, ExitDirection.SOUTH -> room.position.y >= destRoom.position.y
+            ExitDirection.EAST, ExitDirection.WEST,
+            ExitDirection.UP, ExitDirection.DOWN -> room.id <= destRoom.id
+        }) {
             val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
 
-            // Get the correct source and destination points based on direction
-            val sourcePoint = when (exitDir) {
-                ExitDirection.NORTH -> Offset(sourceRect.center.x, sourceRect.top)
-                ExitDirection.SOUTH -> Offset(sourceRect.center.x, sourceRect.bottom)
-                ExitDirection.EAST -> Offset(sourceRect.right, sourceRect.center.y)
-                ExitDirection.WEST -> Offset(sourceRect.left, sourceRect.center.y)
-                ExitDirection.UP -> Offset(sourceRect.right, sourceRect.top)
-                ExitDirection.DOWN -> Offset(sourceRect.right, sourceRect.bottom)
+            // Get the opposite direction
+            val oppositeDir = when (exitDir) {
+                ExitDirection.NORTH -> ExitDirection.SOUTH
+                ExitDirection.SOUTH -> ExitDirection.NORTH
+                ExitDirection.EAST -> ExitDirection.WEST
+                ExitDirection.WEST -> ExitDirection.EAST
+                ExitDirection.UP -> ExitDirection.DOWN
+                ExitDirection.DOWN -> ExitDirection.UP
             }
 
-            val destPoint = when (exitDir) {
-                ExitDirection.NORTH -> Offset(destRect.center.x, destRect.bottom)
-                ExitDirection.SOUTH -> Offset(destRect.center.x, destRect.top)
-                ExitDirection.EAST -> Offset(destRect.left, destRect.center.y)
-                ExitDirection.WEST -> Offset(destRect.right, destRect.center.y)
-                ExitDirection.UP -> Offset(destRect.left, destRect.bottom)
-                ExitDirection.DOWN -> Offset(destRect.left, destRect.top)
+            log.debug("Drawing connection: ${room.id} -> ${destRoom.id}")
+            log.debug("Exit direction: $exitDir")
+            log.debug("Source room corners: ${room.exitCorners}")
+            log.debug("Dest room corners: ${destRoom.exitCorners}")
+            
+            // For UP/DOWN, use the stored corner information
+            val (sourcePoint, destPoint) = when (exitDir) {
+                ExitDirection.NORTH -> Pair(
+                    Offset(sourceRect.center.x, sourceRect.top),
+                    Offset(destRect.center.x, destRect.bottom)
+                )
+                ExitDirection.SOUTH -> Pair(
+                    Offset(sourceRect.center.x, sourceRect.bottom),
+                    Offset(destRect.center.x, destRect.top)
+                )
+                ExitDirection.EAST -> Pair(
+                    Offset(sourceRect.right, sourceRect.center.y),
+                    Offset(destRect.left, destRect.center.y)
+                )
+                ExitDirection.WEST -> Pair(
+                    Offset(sourceRect.left, sourceRect.center.y),
+                    Offset(destRect.right, destRect.center.y)
+                )
+                ExitDirection.UP, ExitDirection.DOWN -> {
+                    val sourceCorner = room.exitCorners[exitDir]
+                    val destCorner = destRoom.exitCorners[oppositeDir]
+                    
+                    log.debug("UP/DOWN connection corners - Source: $sourceCorner, Dest: $destCorner")
+                    
+                    val srcPoint = when {
+                        exitDir == ExitDirection.UP && sourceCorner == "LEFT" -> 
+                            Offset(sourceRect.left, sourceRect.top)
+                        exitDir == ExitDirection.UP -> 
+                            Offset(sourceRect.right, sourceRect.top)
+                        sourceCorner == "LEFT" -> 
+                            Offset(sourceRect.left, sourceRect.bottom)
+                        else -> 
+                            Offset(sourceRect.right, sourceRect.bottom)
+                    }
+                    
+                    val dstPoint = when {
+                        exitDir == ExitDirection.UP && destCorner == "LEFT" -> 
+                            Offset(destRect.left, destRect.bottom)
+                        exitDir == ExitDirection.UP -> 
+                            Offset(destRect.right, destRect.bottom)
+                        destCorner == "LEFT" -> 
+                            Offset(destRect.left, destRect.top)
+                        else -> 
+                            Offset(destRect.right, destRect.top)
+                    }
+                    
+                    Pair(srcPoint, dstPoint)
+                }
             }
 
             val connectionColor = when (exitDir) {
@@ -679,7 +750,7 @@ private fun DrawScope.drawConnections(
                 else -> Color.Gray
             }
 
-            // Draw the main line
+            // Draw the line
             drawLine(
                 color = connectionColor,
                 start = sourcePoint,
@@ -687,18 +758,16 @@ private fun DrawScope.drawConnections(
                 strokeWidth = 2f * zoomLevel
             )
 
-            // Draw arrows at both ends for all directions
+            // Draw arrows
             val arrowLength = 20f * zoomLevel
             val arrowAngle = (kotlin.math.PI / 6).toFloat()
 
-            // Arrow at destination end
             val angleToDestination = kotlin.math.atan2(
                 (destPoint.y - sourcePoint.y),
                 (destPoint.x - sourcePoint.x)
             )
             drawArrow(destPoint, angleToDestination, arrowLength, arrowAngle, zoomLevel, connectionColor)
 
-            // Arrow at source end
             val angleToSource = kotlin.math.atan2(
                 (sourcePoint.y - destPoint.y),
                 (sourcePoint.x - destPoint.x)

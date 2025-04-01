@@ -32,7 +32,10 @@ data class SerializableRoom(
     val description: String,
     val position: SerializablePosition,
     val exits: Map<String, String> = emptyMap(),
-    val flags: List<String> = emptyList()
+    @SerialName("exit_corners")
+    val exitCorners: Map<String, String> = emptyMap(),
+    val flags: List<String> = emptyList(),
+    val metadata: Map<String, String> = emptyMap()
 )
 
 @Serializable
@@ -126,6 +129,9 @@ object ZoneSerializer {
                         position = Position(room.position.x, room.position.y),
                         exits = room.exits.entries.associate { (direction, destId) -> 
                             ExitDirection.valueOf(direction.uppercase()) to destId 
+                        },
+                        exitCorners = room.exitCorners.entries.associate { (direction, corner) ->
+                            ExitDirection.valueOf(direction.uppercase()) to corner
                         },
                         flags = room.flags
                     )
