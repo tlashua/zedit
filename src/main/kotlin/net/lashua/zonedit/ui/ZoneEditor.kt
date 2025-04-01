@@ -250,7 +250,7 @@ fun ZoneEditor(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text("Node Size:")
+                        Text("Room Size:")
                         OutlinedTextField(
                             value = nodeWidthText,
                             onValueChange = { text ->
@@ -363,7 +363,11 @@ fun ZoneEditor(
                                 selectedRoom = updatedRoom
                             },
                             label = { Text("Name") },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedLabelColor = LocalContentColor.current,
+                                focusedLabelColor = LocalContentColor.current
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -381,7 +385,11 @@ fun ZoneEditor(
                             },
                             label = { Text("Description") },
                             modifier = Modifier.fillMaxWidth(),
-                            minLines = 3
+                            minLines = 3,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedLabelColor = LocalContentColor.current,
+                                focusedLabelColor = LocalContentColor.current
+                            )
                         )
                     } else {
                         Text("No room selected", color = Color.Gray)
