@@ -378,6 +378,42 @@ fun ZoneEditor(
                     }
                 }
             }
+
+            // Status bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .height(32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Example status items
+                    Text(
+                        "Canvas: ${canvasWidth}x${canvasHeight}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        "Zoom: ${(zoomLevel * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        "Rooms: ${currentZone.rooms.size}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    
+                    Spacer(Modifier.weight(1f))
+                    
+                    // Right-aligned status items
+                    Text(
+                        "Grid: ${if (currentZone.snapToGrid) "On" else "Off"}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
     }
 }
