@@ -159,6 +159,38 @@ fun ZoneEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Node size controls
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("Room Size:")
+                        OutlinedTextField(
+                            value = nodeWidthText,
+                            onValueChange = { text ->
+                                nodeWidthText = text
+                                text.toIntOrNull()?.let { width ->
+                                    currentZone = currentZone.copy(nodeWidth = width.toFloat())
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true,
+                            label = { Text("W") }
+                        )
+                        OutlinedTextField(
+                            value = nodeHeightText,
+                            onValueChange = { text ->
+                                nodeHeightText = text
+                                text.toIntOrNull()?.let { height ->
+                                    currentZone = currentZone.copy(nodeHeight = height.toFloat())
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true,
+                            label = { Text("H") }
+                        )
+                    }
+                    
                     Button(
                         onClick = {
                             if (currentZone.rooms.isNotEmpty()) {
@@ -195,6 +227,8 @@ fun ZoneEditor(
                     ) {
                         Text("Add Room")
                     }
+
+
                     Spacer(Modifier.weight(1f))
 
                     // Canvas size controls
@@ -281,38 +315,7 @@ fun ZoneEditor(
                         Text("+")
                     }
 
-                    // Node size controls
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text("Room Size:")
-                        OutlinedTextField(
-                            value = nodeWidthText,
-                            onValueChange = { text ->
-                                nodeWidthText = text
-                                text.toIntOrNull()?.let { width ->
-                                    currentZone = currentZone.copy(nodeWidth = width.toFloat())
-                                }
-                            },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true,
-                            label = { Text("W") }
-                        )
 
-                        OutlinedTextField(
-                            value = nodeHeightText,
-                            onValueChange = { text ->
-                                nodeHeightText = text
-                                text.toIntOrNull()?.let { height ->
-                                    currentZone = currentZone.copy(nodeHeight = height.toFloat())
-                                }
-                            },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true,
-                            label = { Text("H") }
-                        )
-                    }
 
                 }
             }
