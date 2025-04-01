@@ -1,5 +1,6 @@
 package net.lashua.zonedit.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -12,12 +13,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.io.ZoneSerializer
-import net.lashua.zonedit.model.Position
-import net.lashua.zonedit.model.Room
-import net.lashua.zonedit.model.RoomUtils
-import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.model.*
 import net.lashua.zonedit.ui.components.ComboBox
 import net.lashua.zonedit.ui.components.GridDimensionField
+import net.lashua.zonedit.ui.components.RoomDetailsPanel
+import net.lashua.zonedit.ui.components.ZoneCanvasContainer
+import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
+import org.jetbrains.compose.splitpane.HorizontalSplitPane
+import org.jetbrains.compose.splitpane.rememberSplitPaneState
 import org.slf4j.LoggerFactory
 import java.io.File
 import javax.swing.JFileChooser
@@ -25,6 +28,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 
 private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.ZoneEditor")
 
+@OptIn(ExperimentalSplitPaneApi::class)
 @Composable
 fun ZoneEditor(
     zone: Zone,
@@ -37,6 +41,8 @@ fun ZoneEditor(
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
     var canvasWidth by remember { mutableStateOf(1000) }
     var canvasHeight by remember { mutableStateOf(1000) }
+
+    val splitPaneState = rememberSplitPaneState(initialPositionPercentage = 0.7f)
 
     // File chooser state
     var fileChooser by remember { mutableStateOf<JFileChooser?>(null) }
@@ -325,83 +331,50 @@ fun ZoneEditor(
             }
 
             // Main content
-            Row(modifier = Modifier.weight(1f)) {
-                ZoneCanvas(
-                    zone = currentZone,
-                    zoomLevel = zoomLevel,
-                    canvasWidth = canvasWidth,
-                    canvasHeight = canvasHeight,
-                    selectedRoom = selectedRoom,
-                    onZoneChanged = { newZone ->
-                        log.trace("Zone updated: {}", newZone.rooms.map { it.id })
-                        currentZone = newZone
-                    },
-                    onRoomSelected = { room ->
-                        log.trace("Room selection changed to: {}", room?.id)
-                        selectedRoom = room
-                    },
-                    onConnectionStarted = { room, direction ->
-                        log.debug("Connection started from {} in direction {}", room.id, direction)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Side panel for room details
-                Column(
-                    modifier = Modifier
-                        .width(300.dp)
-                        .fillMaxHeight()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "Room Details",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(bottom = 16.dp)
+            HorizontalSplitPane(
+                splitPaneState = splitPaneState,
+                modifier = Modifier.weight(1f)
+            ) {
+                first(minSize = 400.dp) {
+                    ZoneCanvasContainer(
+                        zone = currentZone,
+                        zoomLevel = zoomLevel,
+                        canvasWidth = canvasWidth,
+                        canvasHeight = canvasHeight,
+                        selectedRoom = selectedRoom,
+                        onZoneChanged = { newZone: Zone ->
+                            log.trace("Zone updated: {}", newZone.rooms.map { it.id })
+                            currentZone = newZone
+                        },
+                        onRoomSelected = { room: Room? ->
+                            log.trace("Room selection changed to: {}", room?.id)
+                            selectedRoom = room
+                        },
+                        onConnectionStarted = { room: Room, direction: ExitDirection ->
+                            log.debug("Connection started from {} in direction {}", room.id, direction)
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
-
-                    if (selectedRoom != null) {
-                        OutlinedTextField(
-                            value = selectedRoom!!.name,
-                            onValueChange = { newName ->
-                                val updatedRoom = selectedRoom!!.copy(name = newName)
+                }
+                second(minSize = 200.dp) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .border(1.dp, MaterialTheme.colorScheme.outline),
+                        shadowElevation = 4.dp
+                    ) {
+                        RoomDetailsPanel(
+                            selectedRoom = selectedRoom,
+                            onRoomUpdated = { updatedRoom: Room ->
                                 currentZone = currentZone.copy(
                                     rooms = currentZone.rooms.map {
-                                        if (it.id == selectedRoom!!.id) updatedRoom else it
+                                        if (it.id == updatedRoom.id) updatedRoom else it
                                     }
                                 )
                                 selectedRoom = updatedRoom
                             },
-                            label = { Text("Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedLabelColor = LocalContentColor.current,
-                                focusedLabelColor = LocalContentColor.current
-                            )
+                            modifier = Modifier.padding(16.dp)
                         )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = selectedRoom!!.description,
-                            onValueChange = { newDesc ->
-                                val updatedRoom = selectedRoom!!.copy(description = newDesc)
-                                currentZone = currentZone.copy(
-                                    rooms = currentZone.rooms.map {
-                                        if (it.id == selectedRoom!!.id) updatedRoom else it
-                                    }
-                                )
-                                selectedRoom = updatedRoom
-                            },
-                            label = { Text("Description") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedLabelColor = LocalContentColor.current,
-                                focusedLabelColor = LocalContentColor.current
-                            )
-                        )
-                    } else {
-                        Text("No room selected", color = Color.Gray)
                     }
                 }
             }

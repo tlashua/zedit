@@ -34,6 +34,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.compose.components:components-splitpane-desktop:1.5.1")
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.compose.material3:material3:1.8.0-beta01")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
