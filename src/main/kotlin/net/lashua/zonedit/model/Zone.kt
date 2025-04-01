@@ -10,12 +10,12 @@ data class Zone(
     val id: String,
     val name: String,
     val rooms: List<Room> = emptyList(),
-    val nodeWidth: Float = 100f,  // Default node width in dp
-    val nodeHeight: Float = 60f,  // Default node height in dp
-    val gridSize: Float = 20f,  // Default grid size
-    val snapToGrid: Boolean = true  // Default to enabled
+    val nodeWidthDp: Float = 100f,  // Changed from nodeWidth
+    val nodeHeightDp: Float = 60f,  // Changed from nodeHeight
+    val gridSizeDp: Float = 20f,    // Changed from gridSize
+    val snapToGrid: Boolean = true
 ) {
-    // Helper function to get next available room number
+    // Update helper functions to work with dp
     fun getNextRoomNumber(): Int {
         if (rooms.isEmpty()) return 0
         
@@ -29,8 +29,8 @@ data class Zone(
     fun snapPosition(pos: Position): Position {
         if (!snapToGrid) return pos
         return Position(
-            x = (pos.x / gridSize).roundToInt() * gridSize,
-            y = (pos.y / gridSize).roundToInt() * gridSize
+            x = (pos.x / gridSizeDp).roundToInt() * gridSizeDp,
+            y = (pos.y / gridSizeDp).roundToInt() * gridSizeDp
         )
     }
 }

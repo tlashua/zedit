@@ -361,7 +361,10 @@ fun ZoneEditor(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                second(minSize = 200.dp) {
+                second(
+                    // Calculate minimum size to prevent exposing canvas container
+                    minSize = (canvasWidth * zoomLevel).dp
+                ) {
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
