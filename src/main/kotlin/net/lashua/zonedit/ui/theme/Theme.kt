@@ -2,12 +2,20 @@ package net.lashua.zonedit.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 
 // Typography definition
 private val CustomTypography = Typography(
@@ -46,9 +54,78 @@ private val BlueScheme = lightColorScheme(
 fun ZoneEditorTheme(
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        typography = CustomTypography,
-        colorScheme = BlueScheme, // Try different schemes here
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalSplitPaneStyle provides SplitPaneStyle(
+            splitter = SplitterStyle(
+                width = 4.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                gripColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                gripSize = 20.dp,
+                gripGap = 4.dp,
+                gripCount = 3
+            )
+        )
+    ) {
+        MaterialTheme(
+            typography = CustomTypography,
+            colorScheme = BlueScheme,
+            content = content
+        )
+    }
+}
+
+private data class SplitPaneStyle(
+    val splitter: SplitterStyle
+)
+
+private data class SplitterStyle(
+    val width: Dp,
+    val color: Color,
+    val gripColor: Color,
+    val gripSize: Dp,
+    val gripGap: Dp,
+    val gripCount: Int
+)
+
+private val LocalSplitPaneStyle = compositionLocalOf { 
+    SplitPaneStyle(
+        splitter = SplitterStyle(
+            width = 4.dp,
+            color = Color.Transparent,
+            gripColor = Color.Gray,
+            gripSize = 20.dp,
+            gripGap = 4.dp,
+            gripCount = 3
+        )
+    ) 
+}
+
+@Composable
+fun CustomSplitter() {
+    val style = LocalSplitPaneStyle.current
+    Box(
+        Modifier
+            .width(style.splitter.width)
+            .fillMaxHeight()
+            .background(style.splitter.color)
+    ) {
+        Column(
+            Modifier
+                .align(Alignment.Center)
+                .padding(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(style.splitter.gripGap)
+        ) {
+            repeat(style.splitter.gripCount) {
+                Box(
+                    Modifier
+                        .width(style.splitter.gripSize)
+                        .height(1.dp)
+                        .background(
+                            style.splitter.gripColor,
+                            RoundedCornerShape(1.dp)
+                        )
+                )
+            }
+        }
+    }
 }

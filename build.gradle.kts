@@ -34,14 +34,14 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.compose.components:components-splitpane-desktop:1.5.1")
+    implementation("org.jetbrains.compose.components:components-splitpane-desktop:1.8.0-beta01")
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.compose.material3:material3:1.8.0-beta01")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
     implementation("net.peanuuutz.tomlkt:tomlkt:0.3.7")
     implementation("org.slf4j:slf4j-api:2.0.9")
-    implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation(  "ch.qos.logback:logback-classic:1.4.12")
 }
 
 compose.desktop {

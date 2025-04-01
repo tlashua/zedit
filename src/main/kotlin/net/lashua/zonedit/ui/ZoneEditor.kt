@@ -51,6 +51,12 @@ fun ZoneEditor(
     val widthGrids = (canvasWidthDp / currentZone.gridSizeDp).toInt()
     val heightGrids = (canvasHeightDp / currentZone.gridSizeDp).toInt()
 
+    // Calculate total canvas width including rulers and borders
+    val totalCanvasWidth = remember(canvasWidthDp) {
+        // Canvas width + left ruler (24.dp) + right border (1.dp)
+        canvasWidthDp + 25f
+    }
+
     val splitPaneState = rememberSplitPaneState(initialPositionPercentage = 0.7f)
 
     // File chooser state
@@ -363,7 +369,7 @@ fun ZoneEditor(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                second(minSize = 300.dp) {  // Fixed reasonable minimum size for details panel
+                second(minSize = 400.dp) { // Increased minimum size to prevent over-shrinking
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
