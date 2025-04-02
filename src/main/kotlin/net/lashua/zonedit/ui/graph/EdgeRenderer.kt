@@ -12,7 +12,7 @@ import net.lashua.zonedit.model.ExitData
 object EdgeRenderer {
     /**
      * Draws an edge in the graph editor.
-     * 
+     *
      * @param drawScope The DrawScope to draw in
      * @param edge The edge to draw
      * @param zoomLevel The current zoom level
@@ -33,15 +33,15 @@ object EdgeRenderer {
                 strokeWidth = edge.strokeWidth * zoomLevel,
                 pathEffect = if (isDashed) PathEffect.dashPathEffect(floatArrayOf(10f, 10f)) else null
             )
-            
+
             // Draw arrows
             drawArrows(edge.sourcePoint, edge.targetPoint, edge.color, zoomLevel)
         }
     }
-    
+
     /**
      * Draws arrows for an edge.
-     * 
+     *
      * @param sourcePoint The source point of the edge
      * @param targetPoint The target point of the edge
      * @param color The color of the arrows
@@ -55,29 +55,21 @@ object EdgeRenderer {
     ) {
         val arrowLength = 20f * zoomLevel
         val arrowAngle = (kotlin.math.PI / 6).toFloat()
-        
-        // Calculate angles
-        val angleToDestination = calculateAngle(sourcePoint, targetPoint)
-        val angleToSource = calculateAngle(targetPoint, sourcePoint)
-        
-        // Draw destination arrow
-        val (destArrowPoint1, destArrowPoint2) = calculateArrowPoints(
-            targetPoint, angleToDestination, arrowLength, arrowAngle
+
+        // Calculate angle from source to target
+        val angleToTarget = calculateAngle(sourcePoint, targetPoint)
+
+        // Draw arrow at target end only
+        val (arrowPoint1, arrowPoint2) = calculateArrowPoints(
+            targetPoint, angleToTarget + kotlin.math.PI.toFloat(), arrowLength, arrowAngle
         )
-        drawLine(color = color, start = targetPoint, end = destArrowPoint1, strokeWidth = 2f * zoomLevel)
-        drawLine(color = color, start = targetPoint, end = destArrowPoint2, strokeWidth = 2f * zoomLevel)
-        
-        // Draw source arrow
-        val (sourceArrowPoint1, sourceArrowPoint2) = calculateArrowPoints(
-            sourcePoint, angleToSource, arrowLength, arrowAngle
-        )
-        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint1, strokeWidth = 2f * zoomLevel)
-        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint2, strokeWidth = 2f * zoomLevel)
+        drawLine(color = color, start = targetPoint, end = arrowPoint1, strokeWidth = 2f * zoomLevel)
+        drawLine(color = color, start = targetPoint, end = arrowPoint2, strokeWidth = 2f * zoomLevel)
     }
-    
+
     /**
      * Calculates the angle between two points.
-     * 
+     *
      * @param from The starting point
      * @param to The ending point
      * @return The angle in radians
@@ -85,10 +77,10 @@ object EdgeRenderer {
     private fun calculateAngle(from: Offset, to: Offset): Float {
         return kotlin.math.atan2(to.y - from.y, to.x - from.x)
     }
-    
+
     /**
      * Calculates the points for an arrow.
-     * 
+     *
      * @param point The point of the arrow
      * @param angle The angle of the arrow
      * @param length The length of the arrow
@@ -105,12 +97,12 @@ object EdgeRenderer {
             point.x + length * kotlin.math.cos(angle + arrowAngle).toFloat(),
             point.y + length * kotlin.math.sin(angle + arrowAngle).toFloat()
         )
-        
+
         val point2 = Offset(
             point.x + length * kotlin.math.cos(angle - arrowAngle).toFloat(),
             point.y + length * kotlin.math.sin(angle - arrowAngle).toFloat()
         )
-        
+
         return Pair(point1, point2)
     }
 }

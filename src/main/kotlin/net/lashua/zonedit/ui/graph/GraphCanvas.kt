@@ -231,7 +231,9 @@ fun GraphCanvas(
                                     Triple(ExitDirection.NORTH, roomX + roomWidth / 2, roomY), // North
                                     Triple(ExitDirection.EAST, roomX + roomWidth, roomY + roomHeight / 2), // East
                                     Triple(ExitDirection.SOUTH, roomX + roomWidth / 2, roomY + roomHeight), // South
-                                    Triple(ExitDirection.WEST, roomX, roomY + roomHeight / 2) // West
+                                    Triple(ExitDirection.WEST, roomX, roomY + roomHeight / 2), // West
+                                    Triple(ExitDirection.UP, roomX + roomWidth / 4, roomY + roomHeight / 4), // Up (top-left corner)
+                                    Triple(ExitDirection.DOWN, roomX + 3 * roomWidth / 4, roomY + 3 * roomHeight / 4) // Down (bottom-right corner)
                                 )
 
                                 // Find the closest connection point
