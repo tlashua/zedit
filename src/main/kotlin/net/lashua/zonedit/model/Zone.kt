@@ -33,6 +33,76 @@ data class Zone(
             y = (pos.y / gridSizeDp).roundToInt() * gridSizeDp
         )
     }
+
+    fun createRoomWithConnection(
+        sourceRoom: Room,
+        direction: ExitDirection,
+        position: Position,
+        sourceCorner: String? = null
+    ): Zone {
+        val newRoom = Room(
+            id = "${name.lowercase()}${getNextRoomNumber()}",
+            name = "New Room",
+            description = "Description",
+            position = if (snapToGrid) snapPosition(position) else position
+        )
+
+        val (updatedSource, updatedNewRoom) = ConnectionManager().createConnection(
+            sourceRoom,
+            direction,
+            newRoom,
+            sourceCorner
+        )
+
+        return copy(rooms = rooms.map { room ->
+            when (room.id) {
+                updatedSource.id -> updatedSource
+                else -> room
+            }
+        } + updatedNewRoom)
+    }
+
+    fun connectRooms(
+        sourceRoom: Room,
+        targetRoom: Room,
+        direction: ExitDirection,
+        sourceCorner: String? = null
+    ): Zone {
+        val (updatedSource, updatedDest) = ConnectionManager().createConnection(
+            sourceRoom,
+            direction,
+            targetRoom,
+            sourceCorner
+        )
+
+        return copy(rooms = rooms.map { room ->
+            when (room.id) {
+                updatedSource.id -> updatedSource
+                updatedDest.id -> updatedDest
+                else -> room
+            }
+        })
+    }
+
+    fun updateRoomPosition(roomId: String, position: Position): Zone {
+        val finalPos = if (snapToGrid) snapPosition(position) else position
+        return copy(rooms = rooms.map { room ->
+            if (room.id == roomId) room.copy(position = finalPos) else room
+        })
+    }
+
+    fun removeRoomConnection(sourceRoom: Room, direction: ExitDirection): Zone {
+        val (updatedSource, updatedDest) = ConnectionManager().removeConnection(sourceRoom, direction, this)
+            ?: return this // Return unchanged zone if connection doesn't exist
+
+        return copy(rooms = rooms.map { room ->
+            when (room.id) {
+                updatedSource.id -> updatedSource
+                updatedDest.id -> updatedDest
+                else -> room
+            }
+        })
+    }
 }
 
 // I don't know that strings are a good idea here.  At one point we may

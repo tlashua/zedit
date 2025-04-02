@@ -1,18 +1,15 @@
 package net.lashua.zonedit.ui
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -23,6 +20,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
@@ -30,15 +30,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.lashua.zonedit.model.ExitDirection
-import net.lashua.zonedit.model.Position
-import net.lashua.zonedit.model.Room
-import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.model.*
 import org.slf4j.LoggerFactory
 import kotlin.math.abs
-import kotlin.math.roundToInt
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 data class ConnectionDragState(
     val sourceRoomId: String,
@@ -67,12 +66,15 @@ fun ZoneCanvas(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     val textMeasurer = rememberTextMeasurer()
+    val connectionManager = remember { ConnectionManager() }
 
     var currentZone by remember { mutableStateOf(zone) }
     var draggedRoomId by remember { mutableStateOf<String?>(null) }
     var connectionDragState by remember { mutableStateOf<ConnectionDragState?>(null) }
     var currentSelectedRoom by remember { mutableStateOf(selectedRoom) }
     var lastPosition = remember { mutableStateOf<Position?>(null) }
+    var contextMenuConnection by remember { mutableStateOf<Triple<Room, ExitDirection, Room>?>(null) }
+    var contextMenuPosition by remember { mutableStateOf<DpOffset?>(null) }
 
     LaunchedEffect(canvasWidthDp, canvasHeightDp) {
         log.debug("Canvas dimensions updated - width: {}dp, height: {}dp", 
@@ -112,14 +114,96 @@ fun ZoneCanvas(
                     }
                 }
                 .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        if (draggedRoomId == null && connectionDragState == null) {
-                            val clickedRoom = currentZone.rooms.firstOrNull { room ->
-                                val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
-                                roomRect.contains(offset)
+                    detectTapGestures(
+                        onTap = { offset ->
+                            // Keep existing left-click logic
+                            if (draggedRoomId == null && connectionDragState == null) {
+                                val clickedRoom = currentZone.rooms.firstOrNull { room ->
+                                    val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
+                                    roomRect.contains(offset)
+                                }
+                                log.debug("Room clicked: ${clickedRoom?.id}")
+                                currentSelectedRoom = clickedRoom
+                                onRoomSelected(clickedRoom)
                             }
-                            currentSelectedRoom = clickedRoom
-                            onRoomSelected(clickedRoom)
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (!event.buttons.isSecondaryPressed) {
+                                continue
+                            }
+                            
+                            val offset = event.changes.first().position
+                            log.debug("Right click detected at coordinates: ({}, {})", offset.x, offset.y)
+                            
+                            var connectionFound = false
+                            // Check for connections near the click
+                            for (room in currentZone.rooms) {
+                                if (connectionFound) break
+                                
+                                log.debug("Processing room {} with exits: {}", room.id, room.exits)
+                                
+                                for ((exitDir, destId) in room.exits) {
+                                    val destRoom = currentZone.rooms.find { it.id == destId }
+                                    if (destRoom == null) {
+                                        log.warn("Invalid connection state - destination room {} not found for exit {} from room {}", 
+                                            destId, exitDir, room.id)
+                                        continue
+                                    }
+                                    
+                                    log.debug("Checking connection: {} --[{}]--> {}", 
+                                        room.id, exitDir, destRoom.id)
+                                    
+                                    // Modified connection processing logic
+                                    val shouldProcess = when (exitDir) {
+                                        ExitDirection.NORTH, ExitDirection.SOUTH -> 
+                                            room.position.y >= destRoom.position.y
+                                        ExitDirection.EAST, ExitDirection.WEST -> 
+                                            room.id <= destRoom.id
+                                        ExitDirection.UP, ExitDirection.DOWN -> 
+                                            true  // Always process UP/DOWN connections
+                                    }
+                                    
+                                    if (shouldProcess) {
+                                        val sourceRect = getRoomRect(room, currentZone, density, zoomLevel)
+                                        val destRect = getRoomRect(destRoom, currentZone, density, zoomLevel)
+                                        
+                                        val (sourcePoint, destPoint) = getConnectionPoints(
+                                            exitDir, sourceRect, destRect, room, destRoom
+                                        )
+                                        
+                                        log.debug("Connection points - source: ({}, {}), dest: ({}, {})", 
+                                            sourcePoint.x, sourcePoint.y, destPoint.x, destPoint.y)
+                                        
+                                        val hitDetectionDistance = when (exitDir) {
+                                            ExitDirection.UP, ExitDirection.DOWN -> 100f * density * zoomLevel
+                                            else -> 80f * density * zoomLevel
+                                        }
+                                        
+                                        if (isNearLine(offset, sourcePoint, destPoint, hitDetectionDistance)) {
+                                            log.debug("Hit detected on connection: {} --[{}]--> {}", 
+                                                room.id, exitDir, destRoom.id)
+                                            connectionFound = true
+                                            contextMenuConnection = Triple(room, exitDir, destRoom)
+                                            contextMenuPosition = DpOffset(
+                                                x = (offset.x / density).dp,
+                                                y = (offset.y / density).dp
+                                            )
+                                            // Only consume the event if we found a connection
+                                            event.changes.first().consume()
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (!connectionFound) {
+                                log.debug("No connections found near click position: ({}, {})", offset.x, offset.y)
+                            }
                         }
                     }
                 }
@@ -135,79 +219,83 @@ fun ZoneCanvas(
                                 val roomRect = getRoomRect(currentSelectedRoom!!, currentZone, density, zoomLevel)
                                 val connectionPointSize = 12f * density * zoomLevel
 
-                                // Check if UP or DOWN exits already exist
-                                val hasUpExit = currentSelectedRoom!!.exits.containsKey(ExitDirection.UP)
-                                val hasDownExit = currentSelectedRoom!!.exits.containsKey(ExitDirection.DOWN)
-
+                                // Let's add more debug logging to see what's happening
+                                log.debug("Checking connection points for room: ${currentSelectedRoom?.id}")
+                                log.debug("Current exits: {}", currentSelectedRoom?.exits)
+                                
                                 val direction = when {
-                                    isNearPoint(offset, Offset(roomRect.center.x, roomRect.top), connectionPointSize) ->
-                                        ExitDirection.NORTH to null
-
+                                    isNearPoint(
+                                        offset,
+                                        Offset(roomRect.center.x, roomRect.top),
+                                        connectionPointSize
+                                    ) -> ExitDirection.NORTH to null
+                                    
                                     isNearPoint(
                                         offset,
                                         Offset(roomRect.center.x, roomRect.bottom),
                                         connectionPointSize
-                                    ) ->
-                                        ExitDirection.SOUTH to null
-
+                                    ) -> ExitDirection.SOUTH to null
+                                    
                                     isNearPoint(
                                         offset,
                                         Offset(roomRect.right, roomRect.center.y),
                                         connectionPointSize
-                                    ) ->
-                                        ExitDirection.EAST to null
-
+                                    ) -> ExitDirection.EAST to null
+                                    
                                     isNearPoint(
                                         offset,
                                         Offset(roomRect.left, roomRect.center.y),
                                         connectionPointSize
-                                    ) ->
-                                        ExitDirection.WEST to null
-                                    // Only allow UP if no UP exit exists
-                                    !hasUpExit && (
-                                            isNearPoint(
-                                                offset,
-                                                Offset(roomRect.right, roomRect.top),
-                                                connectionPointSize
-                                            ) ||
-                                                    isNearPoint(
-                                                        offset,
-                                                        Offset(roomRect.left, roomRect.top),
-                                                        connectionPointSize
-                                                    )
-                                            ) -> ExitDirection.UP to (
+                                    ) -> ExitDirection.WEST to null
+                                    
+                                    // UP points - both left and right corners
+                                    isNearPoint(
+                                        offset,
+                                        Offset(roomRect.right, roomRect.top),
+                                        connectionPointSize
+                                    ) ||
+                                    isNearPoint(
+                                        offset,
+                                        Offset(roomRect.left, roomRect.top),
+                                        connectionPointSize
+                                    ) -> {
+                                        log.debug("UP point detected")
+                                        ExitDirection.UP to (
                                             if (isNearPoint(
-                                                    offset,
-                                                    Offset(roomRect.left, roomRect.top),
-                                                    connectionPointSize
-                                                )
-                                            )
-                                                "LEFT" else "RIGHT"
-                                            )
-                                    // Only allow DOWN if no DOWN exit exists
-                                    !hasDownExit && (
-                                            isNearPoint(
                                                 offset,
-                                                Offset(roomRect.right, roomRect.bottom),
+                                                Offset(roomRect.left, roomRect.top),
                                                 connectionPointSize
-                                            ) ||
-                                                    isNearPoint(
-                                                        offset,
-                                                        Offset(roomRect.left, roomRect.bottom),
-                                                        connectionPointSize
-                                                    )
-                                            ) -> ExitDirection.DOWN to (
+                                            ))
+                                            "LEFT" else "RIGHT"
+                                        )
+                                    }
+                                    
+                                    // DOWN points - both left and right corners
+                                    isNearPoint(
+                                        offset,
+                                        Offset(roomRect.right, roomRect.bottom),
+                                        connectionPointSize
+                                    ) ||
+                                    isNearPoint(
+                                        offset,
+                                        Offset(roomRect.left, roomRect.bottom),
+                                        connectionPointSize
+                                    ) -> {
+                                        log.debug("DOWN point detected")
+                                        ExitDirection.DOWN to (
                                             if (isNearPoint(
-                                                    offset,
-                                                    Offset(roomRect.left, roomRect.bottom),
-                                                    connectionPointSize
-                                                )
-                                            )
-                                                "LEFT" else "RIGHT"
-                                            )
+                                                offset,
+                                                Offset(roomRect.left, roomRect.bottom),
+                                                connectionPointSize
+                                            ))
+                                            "LEFT" else "RIGHT"
+                                        )
+                                    }
 
                                     else -> null to null
                                 }
+
+                                log.debug("Direction detected: {}", direction)
 
                                 if (direction.first != null) {
                                     log.debug(
@@ -287,142 +375,39 @@ fun ZoneCanvas(
                             log.debug("Final dragged room: {}", draggedRoomId)
 
                             connectionDragState?.let { state ->
+                                val sourceRoom = currentZone.rooms.first { it.id == state.sourceRoomId }
                                 val targetRoom = currentZone.rooms.firstOrNull { room ->
                                     val roomRect = getRoomRect(room, currentZone, density, zoomLevel)
                                     roomRect.contains(state.currentPoint) && room.id != state.sourceRoomId
                                 }
 
-                                if (targetRoom != null) {
-                                    // Always create bi-directional connections
-                                    val oppositeDirection = when (state.direction) {
-                                        ExitDirection.NORTH -> ExitDirection.SOUTH
-                                        ExitDirection.SOUTH -> ExitDirection.NORTH
-                                        ExitDirection.EAST -> ExitDirection.WEST
-                                        ExitDirection.WEST -> ExitDirection.EAST
-                                        ExitDirection.UP -> ExitDirection.DOWN
-                                        ExitDirection.DOWN -> ExitDirection.UP
-                                    }
-
-                                    // For UP/DOWN, use opposite corners for better visual connection
-                                    val sourceCorner = state.sourceCorner
-                                    val targetCorner = if (sourceCorner == "LEFT") "RIGHT" else "LEFT"
-
-                                    val updatedRooms = currentZone.rooms.map { room ->
-                                        when (room.id) {
-                                            state.sourceRoomId -> room.copy(
-                                                exits = room.exits + (state.direction to targetRoom.id),
-                                                exitCorners = when (state.direction) {
-                                                    ExitDirection.UP, ExitDirection.DOWN -> room.exitCorners + (state.direction to sourceCorner)
-                                                    else -> room.exitCorners
-                                                }
-                                            )
-                                            targetRoom.id -> room.copy(
-                                                exits = room.exits + (oppositeDirection to state.sourceRoomId),
-                                                exitCorners = when (oppositeDirection) {
-                                                    ExitDirection.UP, ExitDirection.DOWN -> room.exitCorners + (oppositeDirection to targetCorner)
-                                                    else -> room.exitCorners
-                                                }
-                                            )
-                                            else -> room
-                                        }
-                                    }
-                                    currentZone = currentZone.copy(rooms = updatedRooms)
-                                    onZoneChanged(currentZone)
+                                currentZone = if (targetRoom != null) {
+                                    currentZone.connectRooms(
+                                        sourceRoom,
+                                        targetRoom,
+                                        state.direction,
+                                        state.sourceCorner
+                                    )
                                 } else {
-                                    // Create new room at drop location
-                                    log.debug("Creating new room. Canvas dimensions: {}x{}", canvasWidthDp.value, canvasHeightDp.value)
+                                    val modelX = (state.currentPoint.x / (density * zoomLevel))
+                                        .coerceIn(0f, canvasWidthDp.value - zone.nodeWidthDp)
                                     
-                                    val modelX = (state.currentPoint.x / (density * zoomLevel)).also { 
-                                        log.debug("Raw modelX before clamping: {}", it) 
-                                    }.coerceIn(
-                                        0f,
-                                        canvasWidthDp.value - zone.nodeWidthDp
-                                    ).also { 
-                                        log.debug("Clamped modelX: {}", it) 
-                                    }
-                                    
-                                    val modelY = (state.currentPoint.y / (density * zoomLevel)).also { 
-                                        log.debug("Raw modelY before clamping: {}", it) 
-                                    }.coerceIn(
-                                        0f,
-                                        canvasHeightDp.value - zone.nodeHeightDp
-                                    ).also { 
-                                        log.debug("Clamped modelY: {}", it) 
-                                    }
+                                    val modelY = (state.currentPoint.y / (density * zoomLevel))
+                                        .coerceIn(0f, canvasWidthDp.value - zone.nodeHeightDp)
 
-                                    val snappedPos = currentZone.snapPosition(Position(modelX, modelY))
-                                    log.debug("Final snapped position: {}", snappedPos)
-
-                                    // Create the new room with zone-based ID and snapped position
-                                    val nextNum = currentZone.getNextRoomNumber()
-                                    val newRoom = Room(
-                                        id = "${currentZone.name.lowercase()}$nextNum",
-                                        name = "New Room",
-                                        description = "Description",
-                                        position = snappedPos
+                                    currentZone.createRoomWithConnection(
+                                        sourceRoom,
+                                        state.direction,
+                                        Position(modelX, modelY),
+                                        state.sourceCorner
                                     )
-
-                                    // Set up bi-directional connection
-                                    val oppositeDirection = when (state.direction) {
-                                        ExitDirection.NORTH -> ExitDirection.SOUTH
-                                        ExitDirection.SOUTH -> ExitDirection.NORTH
-                                        ExitDirection.EAST -> ExitDirection.WEST
-                                        ExitDirection.WEST -> ExitDirection.EAST
-                                        ExitDirection.UP -> ExitDirection.DOWN
-                                        ExitDirection.DOWN -> ExitDirection.UP
-                                    }
-
-                                    // For UP/DOWN, use opposite corners for better visual connection
-                                    val sourceCorner = state.sourceCorner
-                                    val targetCorner = if (sourceCorner == "LEFT") "RIGHT" else "LEFT"
-
-                                    val updatedRooms = currentZone.rooms.map { room ->
-                                        if (room.id == state.sourceRoomId) {
-                                            room.copy(
-                                                exits = room.exits + (state.direction to newRoom.id),
-                                                exitCorners = when (state.direction) {
-                                                    ExitDirection.UP, ExitDirection.DOWN -> 
-                                                        room.exitCorners + (state.direction to sourceCorner)
-                                                    else -> room.exitCorners
-                                                }
-                                            )
-                                        } else room
-                                    } + newRoom.copy(
-                                        exits = mapOf(oppositeDirection to state.sourceRoomId),
-                                        exitCorners = when (oppositeDirection) {
-                                            ExitDirection.UP, ExitDirection.DOWN -> 
-                                                mapOf(oppositeDirection to targetCorner)
-                                            else -> emptyMap()
-                                        }
-                                    )
-
-                                    currentZone = currentZone.copy(rooms = updatedRooms)
-                                    onZoneChanged(currentZone)
                                 }
+                                onZoneChanged(currentZone)
                             }
 
                             draggedRoomId?.let { id ->
                                 val room = currentZone.rooms.first { it.id == id }
-                                val finalPos = if (currentZone.snapToGrid) {
-                                    val snappedX =
-                                        (room.position.x / currentZone.gridSizeDp).roundToInt() * currentZone.gridSizeDp
-                                    val snappedY =
-                                        (room.position.y / currentZone.gridSizeDp).roundToInt() * currentZone.gridSizeDp
-
-                                    // Snap to nearest grid point only if within 50% of grid size
-                                    val snapThreshold = currentZone.gridSizeDp * 0.5f
-                                    Position(
-                                        x = if (abs(room.position.x - snappedX) < snapThreshold) snappedX else room.position.x,
-                                        y = if (abs(room.position.y - snappedY) < snapThreshold) snappedY else room.position.y
-                                    )
-                                } else {
-                                    room.position
-                                }
-
-                                val updatedRooms = currentZone.rooms.map { r ->
-                                    if (r.id == id) r.copy(position = finalPos) else r
-                                }
-                                currentZone = currentZone.copy(rooms = updatedRooms)
+                                currentZone = currentZone.updateRoomPosition(id, room.position)
                                 onZoneChanged(currentZone)
                             }
 
@@ -436,7 +421,7 @@ fun ZoneCanvas(
 
             // Draw existing connections
             for (room in currentZone.rooms) {
-                drawConnections(room, currentZone, density, zoomLevel)
+                drawConnections(room, currentZone, density, zoomLevel, connectionManager)
             }
 
             // Draw connection preview if dragging
@@ -473,6 +458,56 @@ fun ZoneCanvas(
             // Draw rooms last so they appear on top
             for (room in currentZone.rooms) {
                 drawRoom(room, currentZone, density, zoomLevel, room.id == currentSelectedRoom?.id, textMeasurer)
+            }
+        }
+
+        // Context menu for connections
+        contextMenuPosition?.let { position ->
+            log.debug("Attempting to show context menu at position: $position")
+            contextMenuConnection?.let { (sourceRoom, direction, destRoom) ->
+                log.debug("Context menu connection: ${sourceRoom.id} -> ${destRoom.id} ($direction)")
+                DropdownMenu(
+                    expanded = contextMenuPosition != null,
+                    onDismissRequest = {
+                        log.debug("Context menu dismissed")
+                        contextMenuConnection = null
+                        contextMenuPosition = null
+                    },
+                    offset = position
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Delete Connection") },
+                        onClick = {
+                            log.debug("Delete connection menu item clicked")
+                            val (sourceRoom, direction, targetRoom) = contextMenuConnection ?: run {
+                                log.error("Context menu connection is null when delete clicked")
+                                return@DropdownMenuItem
+                            }
+                            log.debug("Attempting to remove connection: {} --[{}]--> {}", 
+                                sourceRoom.id, direction, targetRoom.id)
+                            
+                            val updatedPair = connectionManager.removeConnection(sourceRoom, direction, currentZone)
+                            if (updatedPair != null) {
+                                log.debug("Connection removed successfully")
+                                val (updatedSource, updatedDest) = updatedPair
+                                currentZone = currentZone.copy(
+                                    rooms = currentZone.rooms.map { r ->
+                                        when (r.id) {
+                                            updatedSource.id -> updatedSource
+                                            updatedDest.id -> updatedDest
+                                            else -> r
+                                        }
+                                    }
+                                )
+                                onZoneChanged(currentZone)
+                            } else {
+                                log.warn("Failed to remove connection")
+                            }
+                            contextMenuConnection = null
+                            contextMenuPosition = null
+                        }
+                    )
+                }
             }
         }
     }
@@ -594,8 +629,9 @@ private fun DrawScope.drawRoom(
                 val hasDownExit = room.exits.containsKey(ExitDirection.DOWN)
 
                 // Corner points for UP/DOWN (all four corners)
-                val upColor = if (hasUpExit) Color.Gray else Color.Green
-                val downColor = if (hasDownExit) Color.Gray else Color.Green
+                // Change from Gray to Green even when exit exists
+                val upColor = Color.Green    // Remove the conditional color
+                val downColor = Color.Green  // Remove the conditional color
 
                 // Top corners (UP)
                 drawCircle(
@@ -665,9 +701,11 @@ private fun DrawScope.drawConnections(
     room: Room,
     zone: Zone,
     density: Float,
-    zoomLevel: Float
+    zoomLevel: Float,
+    connectionManager: ConnectionManager
 ) {
     val sourceRect = getRoomRect(room, zone, density, zoomLevel)
+    val points = connectionManager.getConnectionPoints(room, sourceRect)
 
     for ((exitDir, destId) in room.exits) {
         val destRoom = zone.rooms.find { it.id == destId } ?: continue
@@ -678,25 +716,40 @@ private fun DrawScope.drawConnections(
             ExitDirection.EAST, ExitDirection.WEST,
             ExitDirection.UP, ExitDirection.DOWN -> room.id <= destRoom.id
         }) {
+            val connection = connectionManager.getConnection(room, exitDir, destRoom) ?: continue
+
             val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
-
-            // Get the opposite direction
-            val oppositeDir = when (exitDir) {
-                ExitDirection.NORTH -> ExitDirection.SOUTH
-                ExitDirection.SOUTH -> ExitDirection.NORTH
-                ExitDirection.EAST -> ExitDirection.WEST
-                ExitDirection.WEST -> ExitDirection.EAST
-                ExitDirection.UP -> ExitDirection.DOWN
-                ExitDirection.DOWN -> ExitDirection.UP
-            }
-
-            log.debug("Drawing connection: ${room.id} -> ${destRoom.id}")
-            log.debug("Exit direction: $exitDir")
-            log.debug("Source room corners: ${room.exitCorners}")
-            log.debug("Dest room corners: ${destRoom.exitCorners}")
             
-            // For UP/DOWN, use the stored corner information
+            // Get source and destination points
             val (sourcePoint, destPoint) = when (exitDir) {
+                ExitDirection.UP, ExitDirection.DOWN -> {
+                    val srcCorner = connection.source.corner ?: "RIGHT"
+                    val destCorner = connection.destination.corner ?: "LEFT"
+                    
+                    val srcPoint = when {
+                        exitDir == ExitDirection.DOWN && srcCorner == "LEFT" -> 
+                            Offset(sourceRect.left, sourceRect.bottom)
+                        exitDir == ExitDirection.DOWN -> 
+                            Offset(sourceRect.right, sourceRect.bottom)
+                        srcCorner == "LEFT" -> 
+                            Offset(sourceRect.left, sourceRect.top)
+                        else -> 
+                            Offset(sourceRect.right, sourceRect.top)
+                    }
+                    
+                    val dstPoint = when {
+                        exitDir == ExitDirection.UP && destCorner == "LEFT" -> 
+                            Offset(destRect.left, destRect.bottom)
+                        exitDir == ExitDirection.UP -> 
+                            Offset(destRect.right, destRect.bottom)
+                        destCorner == "LEFT" -> 
+                            Offset(destRect.left, destRect.top)
+                        else -> 
+                            Offset(destRect.right, destRect.top)
+                    }
+                    
+                    Pair(srcPoint, dstPoint)
+                }
                 ExitDirection.NORTH -> Pair(
                     Offset(sourceRect.center.x, sourceRect.top),
                     Offset(destRect.center.x, destRect.bottom)
@@ -713,36 +766,6 @@ private fun DrawScope.drawConnections(
                     Offset(sourceRect.left, sourceRect.center.y),
                     Offset(destRect.right, destRect.center.y)
                 )
-                ExitDirection.UP, ExitDirection.DOWN -> {
-                    val sourceCorner = room.exitCorners[exitDir]
-                    val destCorner = destRoom.exitCorners[oppositeDir]
-                    
-                    log.debug("UP/DOWN connection corners - Source: $sourceCorner, Dest: $destCorner")
-                    
-                    val srcPoint = when {
-                        exitDir == ExitDirection.UP && sourceCorner == "LEFT" -> 
-                            Offset(sourceRect.left, sourceRect.top)
-                        exitDir == ExitDirection.UP -> 
-                            Offset(sourceRect.right, sourceRect.top)
-                        sourceCorner == "LEFT" -> 
-                            Offset(sourceRect.left, sourceRect.bottom)
-                        else -> 
-                            Offset(sourceRect.right, sourceRect.bottom)
-                    }
-                    
-                    val dstPoint = when {
-                        exitDir == ExitDirection.UP && destCorner == "LEFT" -> 
-                            Offset(destRect.left, destRect.bottom)
-                        exitDir == ExitDirection.UP -> 
-                            Offset(destRect.right, destRect.bottom)
-                        destCorner == "LEFT" -> 
-                            Offset(destRect.left, destRect.top)
-                        else -> 
-                            Offset(destRect.right, destRect.top)
-                    }
-                    
-                    Pair(srcPoint, dstPoint)
-                }
             }
 
             val connectionColor = when (exitDir) {
@@ -814,4 +837,110 @@ private fun isNearPoint(point: Offset, target: Offset, threshold: Float): Boolea
                 (point.y - target.y) * (point.y - target.y)
     )
     return distance <= threshold
+}
+
+private fun isNearLine(point: Offset, start: Offset, end: Offset, threshold: Float): Boolean {
+    // If the line is very short, increase the hit area
+    val lineLength = sqrt(
+        (end.x - start.x).pow(2) + (end.y - start.y).pow(2)
+    )
+    
+    // For very short lines, use a circular hit area
+    if (lineLength < threshold * 2) {
+        val centerPoint = Offset(
+            (start.x + end.x) / 2,
+            (start.y + end.y) / 2
+        )
+        val distanceToCenter = sqrt(
+            (point.x - centerPoint.x).pow(2) + (point.y - centerPoint.y).pow(2)
+        )
+        return distanceToCenter <= threshold
+    }
+
+    // For longer lines, use the point-to-line distance formula
+    val numerator = abs(
+        (end.y - start.y) * point.x -
+        (end.x - start.x) * point.y +
+        end.x * start.y -
+        end.y * start.x
+    )
+    
+    val denominator = sqrt(
+        (end.y - start.y).pow(2) + (end.x - start.x).pow(2)
+    )
+    
+    // Calculate the projection point
+    val t = ((point.x - start.x) * (end.x - start.x) + 
+            (point.y - start.y) * (end.y - start.y)) / 
+            (lineLength * lineLength)
+    
+    // Check if the projection point lies outside the line segment
+    return if (t < 0.0f || t > 1.0f) {
+        // If outside, use distance to nearest endpoint
+        val distToStart = sqrt(
+            (point.x - start.x).pow(2) + (point.y - start.y).pow(2)
+        )
+        val distToEnd = sqrt(
+            (point.x - end.x).pow(2) + (point.y - end.y).pow(2)
+        )
+        minOf(distToStart, distToEnd) <= threshold
+    } else {
+        // If inside, use perpendicular distance
+        numerator / denominator <= threshold
+    }
+}
+
+private fun getConnectionPoints(
+    exitDir: ExitDirection,
+    sourceRect: Rect,
+    destRect: Rect,
+    sourceRoom: Room,
+    destRoom: Room
+): Pair<Offset, Offset> {
+    return when (exitDir) {
+        ExitDirection.NORTH -> Pair(
+            Offset(sourceRect.center.x, sourceRect.top),
+            Offset(destRect.center.x, destRect.bottom)
+        )
+        ExitDirection.SOUTH -> Pair(
+            Offset(sourceRect.center.x, sourceRect.bottom),
+            Offset(destRect.center.x, destRect.top)
+        )
+        ExitDirection.EAST -> Pair(
+            Offset(sourceRect.right, sourceRect.center.y),
+            Offset(destRect.left, destRect.center.y)
+        )
+        ExitDirection.WEST -> Pair(
+            Offset(sourceRect.left, sourceRect.center.y),
+            Offset(destRect.right, destRect.center.y)
+        )
+        ExitDirection.UP, ExitDirection.DOWN -> {
+            val srcCorner = sourceRoom.exitCorners[exitDir] ?: "RIGHT"
+            val oppositeDir = if (exitDir == ExitDirection.UP) ExitDirection.DOWN else ExitDirection.UP
+            val destCorner = destRoom.exitCorners[oppositeDir] ?: "LEFT"
+            
+            val srcPoint = when {
+                exitDir == ExitDirection.DOWN && srcCorner == "LEFT" -> 
+                    Offset(sourceRect.left, sourceRect.bottom)
+                exitDir == ExitDirection.DOWN -> 
+                    Offset(sourceRect.right, sourceRect.bottom)
+                srcCorner == "LEFT" -> 
+                    Offset(sourceRect.left, sourceRect.top)
+                else -> 
+                    Offset(sourceRect.right, sourceRect.top)
+            }
+            
+            val dstPoint = when {
+                oppositeDir == ExitDirection.DOWN && destCorner == "LEFT" -> 
+                    Offset(destRect.left, destRect.bottom)
+                oppositeDir == ExitDirection.DOWN -> 
+                    Offset(destRect.right, destRect.bottom)
+                destCorner == "LEFT" -> 
+                    Offset(destRect.left, destRect.top)
+                else -> 
+                    Offset(destRect.right, destRect.top)
+            }
+            Pair(srcPoint, dstPoint)
+        }
+    }
 }

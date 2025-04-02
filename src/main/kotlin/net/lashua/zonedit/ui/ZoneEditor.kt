@@ -9,14 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import net.lashua.zonedit.io.ZoneSerializer
 import net.lashua.zonedit.model.*
-import net.lashua.zonedit.ui.components.ComboBox
 import net.lashua.zonedit.ui.components.GridDimensionField
 import net.lashua.zonedit.ui.components.RoomDetailsPanel
 import net.lashua.zonedit.ui.components.ZoneCanvasContainer
