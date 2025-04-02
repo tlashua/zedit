@@ -293,7 +293,11 @@ data class ConnectionDragState(
     val sourceRoomId: String,
     val direction: ExitDirection,
     val corner: String? = null
-)
+) {
+    override fun toString(): String {
+        return "ConnectionDragState(sourceRoomId=$sourceRoomId, direction=$direction, corner=$corner)"
+    }
+}
 
 /**
  * Information for a context menu.
