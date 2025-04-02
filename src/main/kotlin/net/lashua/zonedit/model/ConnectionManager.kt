@@ -193,13 +193,15 @@ class ConnectionManager {
      * @return A Connection object if the connection exists, null otherwise
      */
     fun getConnection(source: Room, direction: ExitDirection, destination: Room): Connection? {
-        val destId = source.exits[direction] ?: return null
-        if (destination.id != destId) return null
+        // Find the exit from source to destination
+        val exit = source.exits.find {
+            it.direction == direction && it.destinationId == destination.id
+        } ?: return null
 
         val oppositeDir = getOppositeDirection(direction)
 
         // Verify bi-directional connection
-        if (destination.exits[oppositeDir] != source.id) {
+        if (!destination.hasExitTo(oppositeDir, source.id)) {
             log.warn("Invalid connection state: {} -> {} is not bi-directional", source.id, destination.id)
             return null
         }
@@ -209,13 +211,13 @@ class ConnectionManager {
                 position = Offset.Zero, // Will be set by drawing code
                 room = source,
                 direction = direction,
-                corner = source.exitCorners[direction]
+                corner = exit.corner
             ),
             destination = ConnectionPoint(
                 position = Offset.Zero, // Will be set by drawing code
                 room = destination,
                 direction = oppositeDir,
-                corner = destination.exitCorners[oppositeDir]
+                corner = destination.exits.find { it.direction == oppositeDir && it.destinationId == source.id }?.corner
             )
         )
     }
@@ -242,12 +244,12 @@ class ConnectionManager {
      * This prevents drawing the same connection twice
      *
      * @param sourceRoom The source room
-     * @param direction The direction of the connection
+     * @param exit The exit from source to destination
      * @param destRoom The destination room
      * @return True if the connection should be drawn
      */
-    fun shouldDrawConnection(sourceRoom: Room, direction: ExitDirection, destRoom: Room): Boolean {
-        return when (direction) {
+    fun shouldDrawConnection(sourceRoom: Room, exit: Exit, destRoom: Room): Boolean {
+        return when (exit.direction) {
             ExitDirection.NORTH, ExitDirection.SOUTH ->
                 sourceRoom.position.y >= destRoom.position.y
             ExitDirection.EAST, ExitDirection.WEST,
@@ -291,9 +293,15 @@ class ConnectionManager {
                 Offset(destRect.right, destRect.center.y)
             )
             ExitDirection.UP, ExitDirection.DOWN -> {
-                val srcCorner = sourceRoom.exitCorners[direction] ?: "RIGHT"
+                // Find the exit from source to destination
+                val sourceExit = sourceRoom.exits.find { it.direction == direction && it.destinationId == destRoom.id }
+                val srcCorner = sourceExit?.corner ?: "RIGHT"
+
                 val oppositeDir = if (direction == ExitDirection.UP) ExitDirection.DOWN else ExitDirection.UP
-                val destCorner = destRoom.exitCorners[oppositeDir] ?: "LEFT"
+
+                // Find the exit from destination to source
+                val destExit = destRoom.exits.find { it.direction == oppositeDir && it.destinationId == sourceRoom.id }
+                val destCorner = destExit?.corner ?: "LEFT"
 
                 val srcPoint = when {
                     direction == ExitDirection.DOWN && srcCorner == "LEFT" ->
@@ -342,11 +350,11 @@ class ConnectionManager {
             ExitDirection.EAST -> Offset(rect.right, rect.center.y)
             ExitDirection.WEST -> Offset(rect.left, rect.center.y)
             ExitDirection.UP -> {
-                val actualCorner = corner ?: room.exitCorners[direction] ?: "RIGHT"
+                val actualCorner = corner ?: "RIGHT"
                 if (actualCorner == "LEFT") Offset(rect.left, rect.top) else Offset(rect.right, rect.top)
             }
             ExitDirection.DOWN -> {
-                val actualCorner = corner ?: room.exitCorners[direction] ?: "RIGHT"
+                val actualCorner = corner ?: "RIGHT"
                 if (actualCorner == "LEFT") Offset(rect.left, rect.bottom) else Offset(rect.right, rect.bottom)
             }
         }
@@ -364,21 +372,27 @@ class ConnectionManager {
     fun createConnection(source: Room, direction: ExitDirection, destination: Room, sourceCorner: String? = null): Pair<Room, Room> {
         val oppositeDir = getOppositeDirection(direction)
 
-        val updatedSource = source.copy(
-            exits = source.exits + (direction to destination.id),
-            exitCorners = when (direction) {
-                ExitDirection.UP, ExitDirection.DOWN -> source.exitCorners + (direction to (sourceCorner ?: "RIGHT"))
-                else -> source.exitCorners
-            }
+        // Create new exits
+        val sourceExit = Exit(
+            direction = direction,
+            destinationId = destination.id,
+            corner = if (direction in listOf(ExitDirection.UP, ExitDirection.DOWN)) sourceCorner ?: "RIGHT" else null
         )
 
         val destCorner = if (sourceCorner == "LEFT") "RIGHT" else "LEFT"
+        val destExit = Exit(
+            direction = oppositeDir,
+            destinationId = source.id,
+            corner = if (oppositeDir in listOf(ExitDirection.UP, ExitDirection.DOWN)) destCorner else null
+        )
+
+        // Add the new exits to the rooms
+        val updatedSource = source.copy(
+            exits = source.exits + sourceExit
+        )
+
         val updatedDest = destination.copy(
-            exits = destination.exits + (oppositeDir to source.id),
-            exitCorners = when (oppositeDir) {
-                ExitDirection.UP, ExitDirection.DOWN -> destination.exitCorners + (oppositeDir to destCorner)
-                else -> destination.exitCorners
-            }
+            exits = destination.exits + destExit
         )
 
         return Pair(updatedSource, updatedDest)
@@ -395,15 +409,41 @@ class ConnectionManager {
     fun removeConnection(source: Room, direction: ExitDirection, zone: Zone): Pair<Room, Room>? {
         log.debug("removeConnection called - source: {}, direction: {}", source.id, direction)
 
-        val destId = source.exits[direction]
-        if (destId == null) {
+        // Find the first exit in the specified direction
+        val exit = source.getFirstExitInDirection(direction)
+        if (exit == null) {
             log.warn("No destination found for direction {} in room {}", direction, source.id)
             return null
         }
 
-        val destination = zone.rooms.find { it.id == destId }
+        val destination = zone.rooms.find { it.id == exit.destinationId }
         if (destination == null) {
-            log.warn("Destination room {} not found in zone", destId)
+            log.warn("Destination room {} not found in zone", exit.destinationId)
+            return null
+        }
+
+        // Use the other removeConnection method
+        return removeConnection(source, direction, destination)
+    }
+
+    /**
+     * Removes a bi-directional connection between two rooms
+     *
+     * @param source The source room
+     * @param direction The direction from source to destination
+     * @param destination The destination room
+     * @return A pair of updated rooms, or null if the connection doesn't exist
+     */
+    fun removeConnection(source: Room, direction: ExitDirection, destination: Room): Pair<Room, Room>? {
+        log.debug("removeConnection called - source: {}, direction: {}, destination: {}",
+            source.id, direction, destination.id)
+
+        // Find the exit from source to destination
+        val sourceExit = source.exits.find {
+            it.direction == direction && it.destinationId == destination.id
+        }
+        if (sourceExit == null) {
+            log.warn("No exit found from {} to {} in direction {}", source.id, destination.id, direction)
             return null
         }
 
@@ -411,15 +451,26 @@ class ConnectionManager {
         log.debug("Removing bi-directional connection {} <-[{}/{}]-> {}",
             source.id, direction, oppositeDir, destination.id)
 
+        // Find the exit from destination to source
+        val destExit = destination.exits.find {
+            it.direction == oppositeDir && it.destinationId == source.id
+        }
+        if (destExit == null) {
+            log.warn("No return exit found from {} to {} in direction {}", destination.id, source.id, oppositeDir)
+            // We'll still remove the one-way connection
+        }
+
         val updatedSource = source.copy(
-            exits = source.exits - direction,
-            exitCorners = source.exitCorners - direction
+            exits = source.exits - sourceExit
         )
 
-        val updatedDest = destination.copy(
-            exits = destination.exits - oppositeDir,
-            exitCorners = destination.exitCorners - oppositeDir
-        )
+        val updatedDest = if (destExit != null) {
+            destination.copy(
+                exits = destination.exits - destExit
+            )
+        } else {
+            destination
+        }
 
         log.debug("Connection removal complete")
         return Pair(updatedSource, updatedDest)
@@ -523,26 +574,26 @@ class ConnectionManager {
         for (room in zone.rooms) {
             val sourceRect = getRoomRect(room, zone, density, zoomLevel)
 
-            for ((exitDir, destId) in room.exits) {
-                val destRoom = zone.rooms.find { it.id == destId } ?: continue
+            for (exit in room.exits) {
+                val destRoom = zone.rooms.find { it.id == exit.destinationId } ?: continue
 
                 // Only check each connection once
-                if (shouldDrawConnection(room, exitDir, destRoom)) {
+                if (shouldDrawConnection(room, exit, destRoom)) {
                     val destRect = getRoomRect(destRoom, zone, density, zoomLevel)
 
                     // Get source and destination points
                     val (sourcePoint, destPoint) = getConnectionPoints(
-                        exitDir, sourceRect, destRect, room, destRoom
+                        exit.direction, sourceRect, destRect, room, destRoom
                     )
 
                     // Adjust threshold based on connection type
-                    val hitDetectionDistance = when (exitDir) {
+                    val hitDetectionDistance = when (exit.direction) {
                         ExitDirection.UP, ExitDirection.DOWN -> threshold * 1.25f
                         else -> threshold
                     }
 
                     if (isNearLine(point, sourcePoint, destPoint, hitDetectionDistance)) {
-                        return Triple(room, exitDir, destRoom)
+                        return Triple(room, exit.direction, destRoom)
                     }
                 }
             }

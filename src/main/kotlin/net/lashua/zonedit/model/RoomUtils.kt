@@ -17,8 +17,8 @@ object RoomUtils {
         val updatedRooms = zone.rooms.mapIndexed { index, room ->
             room.copy(
                 id = oldToNewIds[room.id]!!,
-                exits = room.exits.mapValues { (_, destId) -> 
-                    oldToNewIds[destId] ?: destId 
+                exits = room.exits.map { exit ->
+                    exit.copy(destinationId = oldToNewIds[exit.destinationId] ?: exit.destinationId)
                 }
             )
         }

@@ -2,10 +2,7 @@ package net.lashua.zonedit.io
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import net.lashua.zonedit.model.ExitDirection
-import net.lashua.zonedit.model.Position
-import net.lashua.zonedit.model.Room
-import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.model.*
 import net.peanuuutz.tomlkt.Toml
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -34,6 +31,8 @@ data class SerializableRoom(
     val exits: Map<String, String> = emptyMap(),
     @SerialName("exit_corners")
     val exitCorners: Map<String, String> = emptyMap(),
+    @SerialName("exit_list")
+    val exitList: List<SerializableExit> = emptyList(),
     val flags: List<String> = emptyList(),
     val metadata: Map<String, String> = emptyMap()
 )
@@ -42,6 +41,13 @@ data class SerializableRoom(
 data class SerializablePosition(
     val x: Float,
     val y: Float
+)
+
+@Serializable
+data class SerializableExit(
+    val direction: String,
+    val destination: String,
+    val corner: String? = null
 )
 
 object ZoneSerializer {
@@ -65,8 +71,12 @@ object ZoneSerializer {
                     name = room.name,
                     description = formatMultilineString(room.description),
                     position = SerializablePosition(room.position.x, room.position.y),
-                    exits = room.exits.entries.associate { (direction, destId) ->
-                        direction.name.lowercase() to destId
+                    exitList = room.exits.map { exit ->
+                        SerializableExit(
+                            direction = exit.direction.name.lowercase(),
+                            destination = exit.destinationId,
+                            corner = exit.corner
+                        )
                     },
                     flags = room.flags
                 )
@@ -127,11 +137,12 @@ object ZoneSerializer {
                         name = room.name,
                         description = room.description,
                         position = Position(room.position.x, room.position.y),
-                        exits = room.exits.entries.associate { (direction, destId) ->
-                            ExitDirection.valueOf(direction.uppercase()) to destId
-                        },
-                        exitCorners = room.exitCorners.entries.associate { (direction, corner) ->
-                            ExitDirection.valueOf(direction.uppercase()) to corner
+                        exits = room.exitList.map { serExit ->
+                            Exit(
+                                direction = ExitDirection.valueOf(serExit.direction.uppercase()),
+                                destinationId = serExit.destination,
+                                corner = serExit.corner
+                            )
                         },
                         flags = room.flags
                     )

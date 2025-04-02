@@ -34,22 +34,22 @@ object ConnectionComponent {
         val sourceRect = RoomComponent.getRoomRect(room, zone, density, zoomLevel)
 
         drawScope.apply {
-            for ((exitDir, destId) in room.exits) {
-                val destRoom = zone.rooms.find { it.id == destId } ?: continue
+            for (exit in room.exits) {
+                val destRoom = zone.rooms.find { it.id == exit.destinationId } ?: continue
 
                 // For all directions, only draw the connection once
-                if (connectionManager.shouldDrawConnection(room, exitDir, destRoom)) {
+                if (connectionManager.shouldDrawConnection(room, exit, destRoom)) {
                     // Verify connection exists before drawing
-                    if (connectionManager.getConnection(room, exitDir, destRoom) == null) continue
+                    if (connectionManager.getConnection(room, exit.direction, destRoom) == null) continue
 
                     val destRect = RoomComponent.getRoomRect(destRoom, zone, density, zoomLevel)
 
                     // Get source and destination points
                     val (sourcePoint, destPoint) = connectionManager.getConnectionPoints(
-                        exitDir, sourceRect, destRect, room, destRoom
+                        exit.direction, sourceRect, destRect, room, destRoom
                     )
 
-                    val connectionColor = connectionManager.getConnectionColor(exitDir)
+                    val connectionColor = connectionManager.getConnectionColor(exit.direction)
 
                     // Draw the line
                     drawLine(
