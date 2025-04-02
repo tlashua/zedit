@@ -5,8 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1a5420f-0be7-43d9-8146-a0bc5356d344" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/graph/model/Edge.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/graph/model/Graph.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/graph/model/Node.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/model/ExitData.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/model/MudExit.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/model/MudRoom.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/model/MudZone.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/model/RoomData.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/adapters/MudExitAdapter.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/adapters/MudRoomAdapter.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/adapters/MudZoneAdapter.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/EdgeRenderer.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/GraphCanvas.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/GraphRenderer.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/GraphTestApp.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/NodeRenderer.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/VisualEdge.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/VisualGraph.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/ui/graph/VisualNode.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AugmentWebviewStateStore.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/net/lashua/zonedit/Main.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,7 +84,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "refactor01",
+    "git-widget-placeholder": "first-class-graph",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/tim/src/zonedit/src/main/kotlin/net/lashua/zonedit",
     "node.js.detected.package.eslint": "true",
