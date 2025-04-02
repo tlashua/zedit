@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -33,6 +34,9 @@ import net.lashua.zonedit.model.RoomData
 import net.lashua.zonedit.ui.adapters.MudZoneAdapter
 import net.lashua.zonedit.viewmodel.ContextMenuInfo
 import net.lashua.zonedit.viewmodel.MudZoneViewModel
+import org.slf4j.LoggerFactory
+
+private val log = LoggerFactory.getLogger("net.lashua.zonedit.ui.graph.GraphCanvas")
 
 /**
  * A canvas for displaying and editing a graph.
@@ -53,8 +57,21 @@ fun GraphCanvas(
     val textMeasurer = rememberTextMeasurer()
 
     // Convert the MudZone to a VisualGraph
+    // Create a new VisualGraph every time the zone or selectedRoomId changes
+    // This ensures that the VisualNodes have the correct positions
     val visualGraph = remember(viewModel.zone, viewModel.selectedRoomId) {
-        MudZoneAdapter.toVisualGraph(viewModel.zone, viewModel.selectedRoomId)
+        val graph = MudZoneAdapter.toVisualGraph(viewModel.zone, viewModel.selectedRoomId)
+        log.debug("GraphCanvas: Created visual graph with {} nodes and {} edges",
+            graph.nodes.size, graph.edges.size)
+
+        // Log the positions of all nodes
+        graph.nodes.forEach { node ->
+            val room = viewModel.zone.getRoom(node.id)
+            log.debug("GraphCanvas: Node {} at position ({}, {}) with size ({}, {}), room position: ({}, {})",
+                node.id, node.x, node.y, node.width, node.height, room?.position?.x, room?.position?.y)
+        }
+
+        graph
     }
 
     // Connection drag preview state
@@ -101,12 +118,26 @@ fun GraphCanvas(
                     detectTapGestures(
                         onTap = { offset ->
                             // Find room at tap position
-                            val roomAtPosition = findRoomAtPosition(
-                                visualGraph, offset.x / density, offset.y / density
-                            )
+                            val clickX = offset.x / density
+                            val clickY = offset.y / density
+
+                            // Find the room at the click position
+                            val roomId = viewModel.zone.rooms.find { room ->
+                                val roomX = room.position.x
+                                val roomY = room.position.y
+                                val roomWidth = viewModel.zone.nodeWidthDp
+                                val roomHeight = viewModel.zone.nodeHeightDp
+
+                                // Check if the click is inside the room's bounds
+                                clickX >= roomX && clickX <= roomX + roomWidth &&
+                                clickY >= roomY && clickY <= roomY + roomHeight
+                            }?.id
+
+                            log.debug("GraphCanvas: Room at tap position ({}, {}): {}",
+                                clickX, clickY, roomId)
 
                             // Select room
-                            viewModel.selectRoom(roomAtPosition?.id)
+                            viewModel.selectRoom(roomId)
                         }
                     )
                 }
@@ -141,14 +172,28 @@ fun GraphCanvas(
                                 event.changes.first().consume()
                             } else {
                                 // Check if clicked on a room
-                                val room = findRoomAtPosition(
-                                    visualGraph, offset.x / density, offset.y / density
-                                )
+                                val clickX = offset.x / density
+                                val clickY = offset.y / density
 
-                                if (room != null) {
+                                // Find the room at the click position
+                                val roomId = viewModel.zone.rooms.find { room ->
+                                    val roomX = room.position.x
+                                    val roomY = room.position.y
+                                    val roomWidth = viewModel.zone.nodeWidthDp
+                                    val roomHeight = viewModel.zone.nodeHeightDp
+
+                                    // Check if the click is inside the room's bounds
+                                    clickX >= roomX && clickX <= roomX + roomWidth &&
+                                    clickY >= roomY && clickY <= roomY + roomHeight
+                                }?.id
+
+                                log.debug("GraphCanvas: Room at context menu position ({}, {}): {}",
+                                    clickX, clickY, roomId)
+
+                                if (roomId != null) {
                                     // Show room context menu
                                     viewModel.showRoomContextMenu(
-                                        roomId = room.id,
+                                        roomId = roomId,
                                         position = dpOffset
                                     )
                                     event.changes.first().consume()
@@ -184,12 +229,28 @@ fun GraphCanvas(
                             }
 
                             // Check if we're starting a room drag
-                            val roomAtPosition = findRoomAtPosition(
-                                visualGraph, offset.x / density, offset.y / density
-                            )
+                            // First, check if we're clicking on a room in the viewModel
+                            val clickX = offset.x / density
+                            val clickY = offset.y / density
 
-                            if (roomAtPosition != null) {
-                                viewModel.startDraggingRoom(roomAtPosition.id)
+                            // Find the room at the click position
+                            val roomId = viewModel.zone.rooms.find { room ->
+                                val roomX = room.position.x
+                                val roomY = room.position.y
+                                val roomWidth = viewModel.zone.nodeWidthDp
+                                val roomHeight = viewModel.zone.nodeHeightDp
+
+                                // Check if the click is inside the room's bounds
+                                clickX >= roomX && clickX <= roomX + roomWidth &&
+                                clickY >= roomY && clickY <= roomY + roomHeight
+                            }?.id
+
+                            log.debug("GraphCanvas: Room at position ({}, {}): {}",
+                                clickX, clickY, roomId)
+
+                            if (roomId != null) {
+                                log.debug("GraphCanvas: Starting drag for room {}", roomId)
+                                viewModel.startDraggingRoom(roomId)
                             }
                         },
                         onDrag = { change, dragAmount ->
@@ -207,6 +268,9 @@ fun GraphCanvas(
                                         .coerceIn(0f, canvasWidthDp.value - viewModel.zone.nodeWidthDp)
                                     val newY = (room.position.y + modelDragY)
                                         .coerceIn(0f, canvasHeightDp.value - viewModel.zone.nodeHeightDp)
+
+                                    log.debug("GraphCanvas: Dragging room {} to position ({}, {})",
+                                        room.id, newX, newY)
 
                                     // Update room position
                                     viewModel.updateRoomPosition(
@@ -350,7 +414,9 @@ private fun findRoomAtPosition(
     x: Float,
     y: Float
 ): VisualNode<RoomData>? {
-    return graph.findNodeAt(x, y)
+    val node = graph.findNodeAt(x, y)
+    log.debug("findRoomAtPosition: Searching for room at ({}, {}), found: {}", x, y, node?.id)
+    return node
 }
 
 /**

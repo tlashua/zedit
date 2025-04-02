@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import net.lashua.zonedit.model.MudRoom
 import net.lashua.zonedit.model.MudZone
 import net.lashua.zonedit.model.Position
 import net.lashua.zonedit.model.RoomData
+import net.lashua.zonedit.viewmodel.MudZoneViewModel
 
 /**
  * A test application for the graph editor.
@@ -29,7 +31,7 @@ fun GraphTestApp() {
     // Create a sample zone
     var zone by remember { mutableStateOf(createSampleZone()) }
     var selectedRoomId by remember { mutableStateOf<String?>(null) }
-    
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -43,7 +45,7 @@ fun GraphTestApp() {
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            
+
             Button(
                 onClick = {
                     zone = createSampleZone()
@@ -53,12 +55,31 @@ fun GraphTestApp() {
             ) {
                 Text("Reset Zone")
             }
-            
+
+            // Create a view model for the zone
+            val viewModel = remember(zone, selectedRoomId) {
+                MudZoneViewModel(zone).apply {
+                    // Set the selected room ID
+                    selectRoom(selectedRoomId)
+                }
+            }
+
+            // Handle zone changes
+            LaunchedEffect(viewModel.zone) {
+                if (viewModel.zone != zone) {
+                    zone = viewModel.zone
+                }
+            }
+
+            // Handle room selection changes
+            LaunchedEffect(viewModel.selectedRoomId) {
+                if (viewModel.selectedRoomId != selectedRoomId) {
+                    selectedRoomId = viewModel.selectedRoomId
+                }
+            }
+
             GraphCanvas(
-                zone = zone,
-                selectedRoomId = selectedRoomId,
-                onZoneChanged = { zone = it },
-                onRoomSelected = { selectedRoomId = it }
+                viewModel = viewModel
             )
         }
     }
@@ -70,7 +91,7 @@ fun GraphTestApp() {
 private fun createSampleZone(): MudZone {
     // Create a new zone
     var zone = MudZone("Test Zone")
-    
+
     // Create some rooms
     val room1 = MudRoom(
         id = "room1",
@@ -80,7 +101,7 @@ private fun createSampleZone(): MudZone {
             position = Position(100f, 100f)
         )
     )
-    
+
     val room2 = MudRoom(
         id = "room2",
         data = RoomData(
@@ -89,7 +110,7 @@ private fun createSampleZone(): MudZone {
             position = Position(300f, 100f)
         )
     )
-    
+
     val room3 = MudRoom(
         id = "room3",
         data = RoomData(
@@ -98,15 +119,15 @@ private fun createSampleZone(): MudZone {
             position = Position(100f, 300f)
         )
     )
-    
+
     // Add rooms to the zone
     zone = zone.addRoom(room1)
     zone = zone.addRoom(room2)
     zone = zone.addRoom(room3)
-    
+
     // Connect the rooms
     zone = zone.connectRooms(room1, room2, ExitDirection.EAST)
     zone = zone.connectRooms(room1, room3, ExitDirection.SOUTH)
-    
+
     return zone
 }

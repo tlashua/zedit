@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import net.lashua.zonedit.model.MudRoom
 import net.lashua.zonedit.model.RoomData
 import net.lashua.zonedit.ui.graph.VisualNode
+import org.slf4j.LoggerFactory
 
 /**
  * Adapter for converting between MudRoom and VisualNode.
@@ -11,7 +12,7 @@ import net.lashua.zonedit.ui.graph.VisualNode
 object MudRoomAdapter {
     /**
      * Converts a MudRoom to a VisualNode.
-     * 
+     *
      * @param room The MudRoom to convert
      * @param width The width of the node in dp
      * @param height The height of the node in dp
@@ -24,6 +25,11 @@ object MudRoomAdapter {
         height: Float,
         isSelected: Boolean = false
     ): VisualNode<RoomData> {
+        // Log the room position for debugging
+        LoggerFactory.getLogger("net.lashua.zonedit.ui.adapters.MudRoomAdapter")
+            .debug("MudRoomAdapter: Creating VisualNode for room {} at position ({}, {})",
+                room.id, room.position.x, room.position.y)
+
         return VisualNode(
             id = room.id,
             x = room.position.x,
@@ -34,10 +40,10 @@ object MudRoomAdapter {
             isSelected = isSelected
         )
     }
-    
+
     /**
      * Updates a MudRoom with the position from a VisualNode.
-     * 
+     *
      * @param room The MudRoom to update
      * @param visualNode The VisualNode to get the position from
      * @return A new MudRoom with the updated position

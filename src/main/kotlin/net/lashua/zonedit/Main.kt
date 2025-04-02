@@ -33,11 +33,8 @@ fun main() = application {
     ) {
         ZoneEditorTheme {
             Surface {
-                // Uncomment to use the original ZoneEditor
-                // ZoneEditor(zone = testZone)
-
-                // Use our new GraphTestApp
-                GraphTestApp()
+                // Use the ZoneEditor with the new GraphCanvasContainer
+                ZoneEditor(zone = testZone)
             }
         }
     }

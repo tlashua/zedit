@@ -17,7 +17,7 @@ import net.lashua.zonedit.io.ZoneSerializer
 import net.lashua.zonedit.model.*
 import net.lashua.zonedit.ui.components.GridDimensionField
 import net.lashua.zonedit.ui.components.RoomDetailsPanel
-import net.lashua.zonedit.ui.components.ZoneCanvasContainer
+import net.lashua.zonedit.ui.components.GraphCanvasContainer
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.HorizontalSplitPane
 import org.jetbrains.compose.splitpane.rememberSplitPaneState
@@ -44,7 +44,7 @@ fun ZoneEditor(
     var canvasWidthDp by remember { mutableStateOf(1000f) }
     var canvasHeightDp by remember { mutableStateOf(1000f) }
     var pointerPosition by remember { mutableStateOf<Offset?>(null) }
-    
+
     // Calculate grid counts for display only
     val widthGrids = (canvasWidthDp / currentZone.gridSizeDp).toInt()
     val heightGrids = (canvasHeightDp / currentZone.gridSizeDp).toInt()
@@ -344,7 +344,7 @@ fun ZoneEditor(
                 modifier = Modifier.weight(1f)
             ) {
                 first(minSize = 400.dp) {
-                    ZoneCanvasContainer(
+                    GraphCanvasContainer(
                         zone = currentZone,
                         zoomLevel = zoomLevel,
                         canvasWidthDp = canvasWidthDp,
@@ -421,9 +421,9 @@ fun ZoneEditor(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    
+
                     Spacer(Modifier.weight(1f))
-                    
+
                     // Right side status items
                     Text(
                         "Grid: ${if (currentZone.snapToGrid) "On" else "Off"}",
