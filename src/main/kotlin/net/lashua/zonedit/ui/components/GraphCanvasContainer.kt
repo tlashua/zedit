@@ -58,6 +58,8 @@ fun GraphCanvasContainer(
             name = zone.name,
             nodeWidthDp = zone.nodeWidthDp,
             nodeHeightDp = zone.nodeHeightDp,
+            gridSizeDp = zone.gridSizeDp,
+            snapToGrid = zone.snapToGrid,
             rooms = zone.rooms.map { room ->
                 MudRoom(
                     id = room.id,

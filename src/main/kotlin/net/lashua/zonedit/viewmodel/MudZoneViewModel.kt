@@ -92,9 +92,10 @@ class MudZoneViewModel(initialZone: MudZone) {
      * @param roomId The ID of the room to update
      * @param position The new position of the room
      */
-    fun updateRoomPosition(roomId: String, position: Position) {
-        log.debug("MudZoneViewModel: Updating room position: {} to {}", roomId, position)
-        zone = zone.updateRoomPosition(roomId, position)
+    fun updateRoomPosition(roomId: String, position: Position, snap: Boolean = false) {
+        log.debug("MudZoneViewModel: Updating room position: {} to {}, snap: {}", roomId, position, snap)
+        // Use the MudZone's updateRoomPosition method, which handles snapping to grid
+        zone = zone.updateRoomPosition(roomId, position, snap)
     }
 
     /**

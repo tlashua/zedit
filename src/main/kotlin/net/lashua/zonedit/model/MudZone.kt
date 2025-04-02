@@ -3,6 +3,7 @@ package net.lashua.zonedit.model
 import net.lashua.zonedit.graph.model.Edge
 import net.lashua.zonedit.graph.model.Graph
 import net.lashua.zonedit.graph.model.Node
+import kotlin.math.roundToInt
 
 /**
  * Represents a MUD zone.
@@ -16,6 +17,8 @@ class MudZone(
     val name: String,
     val nodeWidthDp: Float = 100f,
     val nodeHeightDp: Float = 60f,
+    val gridSizeDp: Float = 20f,
+    val snapToGrid: Boolean = true,
     rooms: List<MudRoom> = emptyList(),
     exits: List<MudExit> = emptyList()
 ) : Graph<RoomData, ExitData>(
@@ -180,15 +183,17 @@ class MudZone(
     }
 
     /**
-     * Updates a room's position in the zone.
+     * Updates the position of a room.
      *
      * @param roomId The ID of the room to update
      * @param position The new position of the room
-     * @return A new MudZone with the room's position updated
+     * @param snap Whether to snap the position to the grid
+     * @return A new MudZone with the room position updated
      */
-    fun updateRoomPosition(roomId: String, position: Position): MudZone {
+    fun updateRoomPosition(roomId: String, position: Position, snap: Boolean = false): MudZone {
         val room = getRoom(roomId) ?: return this
-        val updatedRoom = room.updatePosition(position)
+        val snappedPosition = if (snap && snapToGrid) snapPosition(position) else position
+        val updatedRoom = room.updatePosition(snappedPosition)
         return updateRoom(updatedRoom)
     }
 
@@ -204,6 +209,8 @@ class MudZone(
             name = name,
             nodeWidthDp = nodeWidthDp,
             nodeHeightDp = nodeHeightDp,
+            gridSizeDp = gridSizeDp,
+            snapToGrid = snapToGrid,
             rooms = newGraph.nodes.map {
                 when (it) {
                     is MudRoom -> it
@@ -235,7 +242,7 @@ class MudZone(
 
         // Remove the exit
         val updatedExits = exits.filter { it != exitToRemove }
-        return MudZone(name, nodeWidthDp, nodeHeightDp, rooms, updatedExits)
+        return MudZone(name, nodeWidthDp, nodeHeightDp, gridSizeDp, snapToGrid, rooms, updatedExits)
     }
 
     /**
@@ -300,12 +307,13 @@ class MudZone(
     ): MudZone {
         // Create a new room
         val newRoomId = "scratchpad${rooms.size}"
+        val snappedPosition = if (snapToGrid) snapPosition(position) else position
         val newRoom = MudRoom(
             id = newRoomId,
             data = RoomData(
                 name = "New Room",
                 description = "A new room",
-                position = position
+                position = snappedPosition
             )
         )
 
@@ -333,5 +341,19 @@ class MudZone(
             ExitDirection.UP -> ExitDirection.DOWN
             ExitDirection.DOWN -> ExitDirection.UP
         }
+    }
+
+    /**
+     * Snaps a position to the grid.
+     *
+     * @param position The position to snap
+     * @return The snapped position
+     */
+    fun snapPosition(position: Position): Position {
+        if (!snapToGrid) return position
+        return Position(
+            x = (position.x / gridSizeDp).roundToInt() * gridSizeDp,
+            y = (position.y / gridSizeDp).roundToInt() * gridSizeDp
+        )
     }
 }

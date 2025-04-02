@@ -208,19 +208,41 @@ fun GraphCanvas(
                         onDragStart = { offset ->
                             // Check if we're starting a connection drag
                             if (viewModel.selectedRoomId != null) {
-                                val selectedRoom = visualGraph.getNode(viewModel.selectedRoomId!!)
+                                val selectedRoom = viewModel.zone.getRoom(viewModel.selectedRoomId!!)
                                 if (selectedRoom != null) {
+                                    // Calculate the connection points for the room
+                                    val roomX = selectedRoom.position.x
+                                    val roomY = selectedRoom.position.y
+                                    val roomWidth = viewModel.zone.nodeWidthDp
+                                    val roomHeight = viewModel.zone.nodeHeightDp
+
+                                    // Calculate the click position
+                                    val clickX = offset.x / density
+                                    val clickY = offset.y / density
+
                                     // Check if we're near a connection point
-                                    val connectionPoint = findConnectionPointNearPosition(
-                                        selectedRoom, offset.x / density, offset.y / density, 10f
+                                    val connectionPoints = listOf(
+                                        Triple(ExitDirection.NORTH, roomX + roomWidth / 2, roomY), // North
+                                        Triple(ExitDirection.EAST, roomX + roomWidth, roomY + roomHeight / 2), // East
+                                        Triple(ExitDirection.SOUTH, roomX + roomWidth / 2, roomY + roomHeight), // South
+                                        Triple(ExitDirection.WEST, roomX, roomY + roomHeight / 2) // West
                                     )
+
+                                    // Find the closest connection point
+                                    val connectionPoint = connectionPoints.find { (_, x, y) ->
+                                        val distance = Math.sqrt(Math.pow((clickX - x).toDouble(), 2.0) + Math.pow((clickY - y).toDouble(), 2.0))
+                                        distance < 10
+                                    }
 
                                     if (connectionPoint != null) {
                                         // Start connection drag
+                                        log.debug("GraphCanvas: Starting connection drag from {} in direction {}",
+                                            selectedRoom.id, connectionPoint.first)
+
                                         viewModel.startConnectionDrag(
                                             roomId = selectedRoom.id,
-                                            direction = connectionPoint.direction,
-                                            corner = connectionPoint.corner
+                                            direction = connectionPoint.first,
+                                            corner = null
                                         )
                                         connectionPreview?.currentPoint = offset
                                         return@detectDragGestures
@@ -288,6 +310,16 @@ fun GraphCanvas(
                         onDragEnd = {
                             // Finalize room drag
                             if (viewModel.draggedRoomId != null) {
+                                // Get the current room position
+                                val room = viewModel.zone.getRoom(viewModel.draggedRoomId!!)
+                                if (room != null) {
+                                    // Snap the position to the grid
+                                    viewModel.updateRoomPosition(
+                                        roomId = room.id,
+                                        position = room.position,
+                                        snap = true
+                                    )
+                                }
                                 viewModel.stopDraggingRoom()
                             }
 
@@ -296,15 +328,27 @@ fun GraphCanvas(
                                 val targetPosition = connectionPreview.currentPoint
                                 if (targetPosition != null) {
                                     // Check if we're over a room
-                                    val targetRoom = findRoomAtPosition(
-                                        visualGraph,
-                                        targetPosition.x / density,
-                                        targetPosition.y / density
-                                    )
+                                    val clickX = targetPosition.x / density
+                                    val clickY = targetPosition.y / density
 
-                                    if (targetRoom != null) {
+                                    // Find the room at the click position
+                                    val targetRoomId = viewModel.zone.rooms.find { room ->
+                                        val roomX = room.position.x
+                                        val roomY = room.position.y
+                                        val roomWidth = viewModel.zone.nodeWidthDp
+                                        val roomHeight = viewModel.zone.nodeHeightDp
+
+                                        // Check if the click is inside the room's bounds
+                                        clickX >= roomX && clickX <= roomX + roomWidth &&
+                                        clickY >= roomY && clickY <= roomY + roomHeight
+                                    }?.id
+
+                                    log.debug("GraphCanvas: Target room at position ({}, {}): {}",
+                                        clickX, clickY, targetRoomId)
+
+                                    if (targetRoomId != null) {
                                         // Connect to existing room
-                                        viewModel.finalizeConnectionDrag(targetRoom.id)
+                                        viewModel.finalizeConnectionDrag(targetRoomId)
                                     } else {
                                         // Create new room with connection
                                         viewModel.finalizeConnectionDrag(
