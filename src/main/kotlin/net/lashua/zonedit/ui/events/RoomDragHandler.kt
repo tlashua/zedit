@@ -24,8 +24,8 @@ class RoomDragHandler : EventHandler {
         return modifier.pointerInput(Unit) {
             detectDragGestures(
                 onDragStart = { offset ->
-                    log.debug("Room drag start at: ({}, {})", offset.x, offset.y)
-                    
+                    log.debug("ROOM HANDLER: Drag start at: ({}, {})", offset.x, offset.y)
+
                     // Check if we're dragging a room
                     val roomToDrag = state.connectionManager.findRoomAtPoint(
                         state.zone, offset, density, zoomLevel
@@ -38,7 +38,7 @@ class RoomDragHandler : EventHandler {
                 },
                 onDrag = { change, dragAmount ->
                     change.consume()
-                    
+
                     // Update room position if we're dragging a room
                     if (state.draggedRoomId != null) {
                         // Accumulate the drag amount before snapping
@@ -73,9 +73,9 @@ class RoomDragHandler : EventHandler {
                     }
                 },
                 onDragEnd = {
-                    log.debug("=== Room Drag End ===")
+                    log.debug("=== ROOM HANDLER: Drag End ===")
                     log.debug("Final dragged room: {}", state.draggedRoomId)
-                    
+
                     // Stop room dragging
                     if (state.draggedRoomId != null) {
                         state.stopDragging()

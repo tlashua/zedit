@@ -5,15 +5,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import net.lashua.zonedit.model.ExitDirection
+import net.lashua.zonedit.model.Position
 import net.lashua.zonedit.ui.components.RoomComponent
 import net.lashua.zonedit.ui.state.ZoneCanvasState
 import org.slf4j.LoggerFactory
 
 /**
- * Handler for connection creation via dragging
+ * Combined handler for both connection and room dragging
  */
-class ConnectionDragHandler : EventHandler {
-    private val log = LoggerFactory.getLogger(ConnectionDragHandler::class.java)
+class DragHandler : EventHandler {
+    private val log = LoggerFactory.getLogger(DragHandler::class.java)
 
     override fun applyTo(
         state: ZoneCanvasState,
@@ -26,59 +27,103 @@ class ConnectionDragHandler : EventHandler {
         return modifier.pointerInput(Unit) {
             detectDragGestures(
                 onDragStart = { offset ->
-                    log.debug("CONNECTION HANDLER: Drag start at: ({}, {})", offset.x, offset.y)
-
-                    // Check if we're starting a connection drag
+                    log.debug("Drag start at: ({}, {})", offset.x, offset.y)
+                    
+                    // First, check if we're starting a connection drag (higher priority)
                     if (state.selectedRoom != null) {
-                        tryStartConnectionDrag(state, offset, density, zoomLevel)
-                    }
-
-                    // If we're not starting a connection drag, check if we're dragging a room
-                    if (state.connectionDragState == null) {
+                        val connectionStarted = tryStartConnectionDrag(state, offset, density, zoomLevel)
+                        
+                        // Only try to drag room if we're not starting a connection drag
+                        if (!connectionStarted) {
+                            tryStartRoomDrag(state, offset, density, zoomLevel)
+                        }
+                    } else {
+                        // No selected room, so just try to drag a room
                         tryStartRoomDrag(state, offset, density, zoomLevel)
                     }
                 },
                 onDrag = { change, dragAmount ->
                     change.consume()
-
-                    // Update connection drag point if we're dragging a connection
+                    
+                    // Handle connection dragging
                     if (state.connectionDragState != null) {
                         state.updateConnectionDragPoint(state.connectionDragState!!.currentPoint + dragAmount)
+                    } 
+                    // Handle room dragging
+                    else if (state.draggedRoomId != null) {
+                        // Accumulate the drag amount before snapping
+                        val modelDragX = dragAmount.x / zoomLevel
+                        val modelDragY = dragAmount.y / zoomLevel
+
+                        val room = state.zone.rooms.first { it.id == state.draggedRoomId }
+                        val oldPos = room.position
+
+                        // Calculate new position first without snapping
+                        val rawX =
+                            (oldPos.x + modelDragX).coerceIn(0f, canvasWidthDp - state.zone.nodeWidthDp)
+                        val rawY = (oldPos.y + modelDragY).coerceIn(
+                            0f,
+                            canvasHeightDp - state.zone.nodeHeightDp
+                        )
+
+                        log.debug(
+                            "Drag position - Old: ({}, {}), Raw new: ({}, {}), Canvas: {}x{}, Node: {}x{}, Zoom: {}",
+                            oldPos.x, oldPos.y,
+                            rawX, rawY,
+                            canvasWidthDp, canvasHeightDp,
+                            state.zone.nodeWidthDp, state.zone.nodeHeightDp,
+                            zoomLevel
+                        )
+
+                        // During drag - no snapping at all while actively dragging
+                        val newPos = Position(rawX, rawY)
+
+                        state.updateLastPosition(newPos)
+                        state.updateRoomPosition(state.draggedRoomId!!, newPos)
                     }
                 },
                 onDragEnd = {
-                    log.debug("=== CONNECTION HANDLER: Drag End ===")
-                    log.debug("Final connection state: sourceRoom={}, direction={}, corner={}",
-                        state.connectionDragState?.sourceRoomId,
-                        state.connectionDragState?.direction,
-                        state.connectionDragState?.sourceCorner)
-
-                    // Finalize any connection drag
-                    state.connectionDragState?.let {
+                    log.debug("=== Drag End ===")
+                    
+                    // Finalize connection drag
+                    if (state.connectionDragState != null) {
+                        log.debug("Finalizing connection drag: sourceRoom={}, direction={}, corner={}",
+                            state.connectionDragState?.sourceRoomId,
+                            state.connectionDragState?.direction,
+                            state.connectionDragState?.sourceCorner)
+                            
                         state.finalizeConnectionDrag(
-                            it.currentPoint,
+                            state.connectionDragState!!.currentPoint,
                             density,
                             zoomLevel,
                             canvasWidthDp,
                             canvasHeightDp
                         )
                     }
-
-                    // Stop connection dragging
-                    if (state.connectionDragState != null) {
-                        state.stopDragging()
+                    
+                    // Log room drag end
+                    if (state.draggedRoomId != null) {
+                        log.debug("Finalizing room drag: {}", state.draggedRoomId)
                     }
+                    
+                    // Stop all dragging operations
+                    state.stopDragging()
                 }
             )
         }
     }
-
+    
+    /**
+     * Try to start a connection drag
+     * 
+     * @return true if a connection drag was started, false otherwise
+     */
     private fun tryStartConnectionDrag(
         state: ZoneCanvasState,
         offset: Offset,
         density: Float,
         zoomLevel: Float
-    ) {
+    ): Boolean {
         val roomRect = RoomComponent.getRoomRect(state.selectedRoom!!, state.zone, density, zoomLevel)
         val connectionPointSize = 12f * density * zoomLevel
 
@@ -116,14 +161,17 @@ class ConnectionDragHandler : EventHandler {
                 direction.second
             )
             state.startConnectionDrag(
-                state.selectedRoom!!,
-                direction.first!!,
-                offset,
+                state.selectedRoom!!, 
+                direction.first!!, 
+                offset, 
                 direction.second ?: "RIGHT"
             )
+            return true
         }
+        
+        return false
     }
-
+    
     private fun tryStartRoomDrag(
         state: ZoneCanvasState,
         offset: Offset,

@@ -22,7 +22,7 @@ class CompositeEventHandler(
     ): Modifier {
         log.debug("Applying {} event handlers", handlers.size)
         var result = modifier
-        
+
         for (handler in handlers) {
             result = handler.applyTo(
                 state,
@@ -33,10 +33,10 @@ class CompositeEventHandler(
                 canvasHeightDp
             )
         }
-        
+
         return result
     }
-    
+
     companion object {
         /**
          * Create a default composite event handler with all the standard handlers
@@ -47,8 +47,7 @@ class CompositeEventHandler(
                     PointerPositionHandler(),
                     RoomSelectionHandler(),
                     ConnectionContextMenuHandler(),
-                    ConnectionDragHandler(),
-                    RoomDragHandler()
+                    DragHandler()
                 )
             )
         }
