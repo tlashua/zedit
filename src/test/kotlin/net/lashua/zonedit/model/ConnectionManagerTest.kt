@@ -405,4 +405,86 @@ class ConnectionManagerTest : FunSpec({
             result shouldBe null
         }
     }
+
+    context("Connection retrieval") {
+        test("getConnection should return a Connection object for valid connections") {
+            val (_, room1, room2) = createTestZoneWithConnectedRooms()
+
+            val connection = connectionManager.getConnection(room1, ExitDirection.EAST, room2)
+
+            connection shouldNotBe null
+            connection?.source?.room?.id shouldBe room1.id
+            connection?.source?.direction shouldBe ExitDirection.EAST
+            connection?.destination?.room?.id shouldBe room2.id
+            connection?.destination?.direction shouldBe ExitDirection.WEST
+        }
+
+        test("getConnection should return null for non-existent connections") {
+            val room1 = Room(
+                id = "test0",
+                name = "Room 1",
+                description = "Test room",
+                position = Position(0f, 0f)
+            )
+            val room2 = Room(
+                id = "test1",
+                name = "Room 2",
+                description = "Test room",
+                position = Position(200f, 0f)
+            )
+
+            val connection = connectionManager.getConnection(room1, ExitDirection.EAST, room2)
+
+            connection shouldBe null
+        }
+
+        test("getConnection should return null for non-bidirectional connections") {
+            val room1 = Room(
+                id = "test0",
+                name = "Room 1",
+                description = "Test room",
+                position = Position(0f, 0f),
+                exits = mapOf(ExitDirection.EAST to "test1")
+            )
+            val room2 = Room(
+                id = "test1",
+                name = "Room 2",
+                description = "Test room",
+                position = Position(200f, 0f)
+                // No return connection to room1
+            )
+
+            val connection = connectionManager.getConnection(room1, ExitDirection.EAST, room2)
+
+            connection shouldBe null
+        }
+    }
+
+    context("Arrow calculation") {
+        test("calculateAngle should return the correct angle between two points") {
+            val start = Offset(0f, 0f)
+            val end = Offset(10f, 0f) // Horizontal line to the right
+
+            val angle = connectionManager.calculateAngle(start, end)
+
+            angle shouldBe 0f
+        }
+
+        test("calculateArrowPoints should return the correct points for an arrow") {
+            val point = Offset(100f, 100f)
+            val angle = 0f // Pointing to the right
+            val length = 10f
+            val arrowAngle = kotlin.math.PI.toFloat() / 4f // 45 degrees
+
+            val (point1, point2) = connectionManager.calculateArrowPoints(point, angle, length, arrowAngle)
+
+            // Point1 should be above and to the left of the main point
+            point1.x shouldBe (100f - 10f * kotlin.math.cos(-kotlin.math.PI.toFloat() / 4f))
+            point1.y shouldBe (100f - 10f * kotlin.math.sin(-kotlin.math.PI.toFloat() / 4f))
+
+            // Point2 should be below and to the left of the main point
+            point2.x shouldBe (100f - 10f * kotlin.math.cos(kotlin.math.PI.toFloat() / 4f))
+            point2.y shouldBe (100f - 10f * kotlin.math.sin(kotlin.math.PI.toFloat() / 4f))
+        }
+    }
 })
