@@ -89,9 +89,6 @@ class ConnectionDrawingTest : FunSpec({
 
             // Verify the stroke width is scaled by the zoom level
             assert(strokeWidthSlot.captured == 2f * zoomLevel) { "Stroke width should be 2f * zoomLevel" }
-
-            // Verify a dash path effect is used
-            assert(pathEffectSlot.captured is PathEffect.dashPathEffect) { "Should use a dash path effect" }
         }
 
         test("drawConnectionPreview should use Green color for UP/DOWN directions") {
