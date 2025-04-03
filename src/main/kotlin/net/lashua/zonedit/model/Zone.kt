@@ -21,7 +21,7 @@ data class Zone(
 
         return rooms
             .mapNotNull { room ->
-                room.id.removePrefix("${name.lowercase()}").toIntOrNull()
+                room.id.removePrefix(name.lowercase()).toIntOrNull()
             }
             .maxOrNull()?.plus(1) ?: 0
     }
