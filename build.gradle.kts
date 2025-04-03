@@ -74,6 +74,7 @@ dependencies {
     testImplementation("io.kotest:kotest-property:5.8.0")
     testImplementation("io.mockk:mockk:1.13.9")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("junit:junit:4.13.2")
 
     // Compose UI testing
     testImplementation("org.jetbrains.compose.ui:ui-test-junit4-desktop:1.8.0-beta01")
