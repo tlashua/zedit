@@ -8,6 +8,7 @@ import net.lashua.zonedit.model.ConnectionManager
 import net.lashua.zonedit.model.ExitDirection
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.util.CoordinateConverter
 
 /**
  * Component for drawing connections between rooms
@@ -56,7 +57,7 @@ object ConnectionComponent {
                         color = connectionColor,
                         start = sourcePoint,
                         end = destPoint,
-                        strokeWidth = 2f * zoomLevel
+                        strokeWidth = CoordinateConverter.scaleWithZoom(2f, zoomLevel)
                     )
 
                     // Draw arrows
@@ -80,7 +81,7 @@ object ConnectionComponent {
         color: Color,
         zoomLevel: Float
     ) {
-        val arrowLength = 20f * zoomLevel
+        val arrowLength = CoordinateConverter.scaleWithZoom(20f, zoomLevel)
         val arrowAngle = (kotlin.math.PI / 6).toFloat()
 
         // Calculate angles
@@ -91,15 +92,16 @@ object ConnectionComponent {
         val (destArrowPoint1, destArrowPoint2) = connectionManager.calculateArrowPoints(
             destPoint, angleToDestination, arrowLength, arrowAngle
         )
-        drawLine(color = color, start = destPoint, end = destArrowPoint1, strokeWidth = 2f * zoomLevel)
-        drawLine(color = color, start = destPoint, end = destArrowPoint2, strokeWidth = 2f * zoomLevel)
+        val strokeWidth = CoordinateConverter.scaleWithZoom(2f, zoomLevel)
+        drawLine(color = color, start = destPoint, end = destArrowPoint1, strokeWidth = strokeWidth)
+        drawLine(color = color, start = destPoint, end = destArrowPoint2, strokeWidth = strokeWidth)
 
         // Draw source arrow
         val (sourceArrowPoint1, sourceArrowPoint2) = connectionManager.calculateArrowPoints(
             sourcePoint, angleToSource, arrowLength, arrowAngle
         )
-        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint1, strokeWidth = 2f * zoomLevel)
-        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint2, strokeWidth = 2f * zoomLevel)
+        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint1, strokeWidth = strokeWidth)
+        drawLine(color = color, start = sourcePoint, end = sourceArrowPoint2, strokeWidth = strokeWidth)
     }
 
     /**
@@ -138,7 +140,7 @@ object ConnectionComponent {
             color = previewColor,
             start = sourcePoint,
             end = currentPoint,
-            strokeWidth = 2f * zoomLevel,
+            strokeWidth = CoordinateConverter.scaleWithZoom(2f, zoomLevel),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
         )
     }

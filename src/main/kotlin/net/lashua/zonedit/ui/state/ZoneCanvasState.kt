@@ -14,6 +14,7 @@ import net.lashua.zonedit.model.Position
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Zone
 import net.lashua.zonedit.ui.ConnectionDragState
+import net.lashua.zonedit.util.CoordinateConverter
 import org.slf4j.LoggerFactory
 
 /**
@@ -104,28 +105,39 @@ class ZoneCanvasState(
     }
 
     fun startConnectionDrag(room: Room, direction: ExitDirection, point: Offset, corner: String) {
-        log.debug("Started connection drag from {} in direction {}", room.id, direction)
+        log.debug("Starting connection drag from {} in direction {} at point {} with corner {}",
+            room.id, direction, point, corner)
         connectionDragState = ConnectionDragState(
             sourceRoomId = room.id,
             direction = direction,
             currentPoint = point,
             sourceCorner = corner
         )
+        log.debug("Created connection drag state: {}", connectionDragState)
         onConnectionStarted(room, direction)
+        log.debug("Connection drag started")
     }
 
     fun updateConnectionDragPoint(point: Offset) {
+        log.debug("Updating connection drag point to {}", point)
         connectionDragState?.let {
             connectionDragState = it.copy(currentPoint = point)
-        }
+            log.debug("Updated connection drag state: {}", connectionDragState)
+        } ?: log.debug("No connection drag state to update")
     }
 
     fun finalizeConnectionDrag(point: Offset, density: Float, zoomLevel: Float, canvasWidthDp: Float, canvasHeightDp: Float) {
+        log.debug("Finalizing connection drag with point={}, density={}, zoomLevel={}", point, density, zoomLevel)
         connectionDragState?.let { state ->
+            log.debug("Connection drag state: {}", state)
             val sourceRoom = zone.rooms.first { it.id == state.sourceRoomId }
+            log.debug("Source room: {}", sourceRoom.id)
+
+            // Check if we're dropping on an existing room
             val targetRoom = connectionManager.findRoomAtPoint(
                 zone, state.currentPoint, density, zoomLevel
             )?.takeIf { it.id != state.sourceRoomId }
+            log.debug("Target room: {}", targetRoom?.id)
 
             val updatedZone = if (targetRoom != null) {
                 // Connect to existing room
@@ -138,12 +150,10 @@ class ZoneCanvasState(
             } else {
                 // Create new room with connection
                 // Allow creating rooms beyond the visible canvas area, only constrain to prevent negative positions
-                // Convert screen coordinates (px) to model coordinates (dp)
-                val modelX = (state.currentPoint.x / (density * zoomLevel))
-                    .coerceAtLeast(0f)
-
-                val modelY = (state.currentPoint.y / (density * zoomLevel))
-                    .coerceAtLeast(0f)
+                // Convert screen coordinates (px) to model coordinates (dp) using CoordinateConverter
+                val modelPos = CoordinateConverter.screenToModel(state.currentPoint, density, zoomLevel)
+                val modelX = modelPos.x.coerceAtLeast(0f)
+                val modelY = modelPos.y.coerceAtLeast(0f)
 
                 zone.createRoomWithConnection(
                     sourceRoom,

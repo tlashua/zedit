@@ -21,12 +21,12 @@ class PointerPositionHandler : EventHandler {
         canvasWidthDp: Float,
         canvasHeightDp: Float
     ): Modifier {
-        return modifier.pointerInput(Unit) {
+        return modifier.pointerInput(zoomLevel) {
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
                     val position = event.changes.firstOrNull()?.position
-                    
+
                     // Only update if we have a position and it's within bounds
                     position?.let {
                         log.trace("Pointer position: ({}, {})", it.x, it.y)

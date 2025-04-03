@@ -14,6 +14,7 @@ import net.lashua.zonedit.model.ConnectionManager
 import net.lashua.zonedit.model.ExitDirection
 import net.lashua.zonedit.model.Room
 import net.lashua.zonedit.model.Zone
+import net.lashua.zonedit.util.CoordinateConverter
 import org.slf4j.LoggerFactory
 
 /**
@@ -68,9 +69,9 @@ object RoomComponent {
             // Only attempt to draw text if there's enough space
             if (rect.width >= 10 && rect.height >= 10) {  // Minimum size threshold for text
                 try {
-                    // Create base font sizes
-                    val nameFontSize = (14 * zoomLevel).sp
-                    val idFontSize = (10 * zoomLevel).sp
+                    // Create base font sizes using CoordinateConverter for consistent scaling
+                    val nameFontSize = CoordinateConverter.scaleWithZoom(14f, zoomLevel).sp
+                    val idFontSize = CoordinateConverter.scaleWithZoom(10f, zoomLevel).sp
 
                     // Measure text dimensions
                     val nameStyle = TextStyle(fontSize = nameFontSize, color = Color.Black)
@@ -80,13 +81,16 @@ object RoomComponent {
                     // No need to measure ID text separately since we're using the TextMeasurer directly in drawText
 
                     // Calculate vertical spacing between name and id
-                    val verticalSpacing = 4f * zoomLevel
+                    val verticalSpacing = CoordinateConverter.scaleWithZoom(4f, zoomLevel)
+
+                    // Calculate padding with consistent scaling
+                    val padding = CoordinateConverter.scaleWithZoom(8f, zoomLevel)
 
                     // Draw name
                     drawText(
                         textMeasurer = textMeasurer,
                         text = room.name,
-                        topLeft = rect.topLeft + Offset(8f * zoomLevel, 8f * zoomLevel),
+                        topLeft = rect.topLeft + Offset(padding, padding),
                         style = nameStyle
                     )
 
@@ -95,8 +99,8 @@ object RoomComponent {
                         textMeasurer = textMeasurer,
                         text = room.id,
                         topLeft = rect.topLeft + Offset(
-                            8f * zoomLevel,
-                            8f * zoomLevel + nameMeasure.size.height + verticalSpacing
+                            padding,
+                            padding + nameMeasure.size.height + verticalSpacing
                         ),
                         style = idStyle
                     )
@@ -126,7 +130,7 @@ object RoomComponent {
         density: Float,
         zoomLevel: Float
     ) {
-        val connectionPointSize = 12f * density * zoomLevel
+        val connectionPointSize = CoordinateConverter.scaleWithZoom(12f * density, zoomLevel)
 
         // Cardinal direction points (N,S,E,W)
         drawCircle(
@@ -202,6 +206,6 @@ object RoomComponent {
      * @return The rectangle for the room
      */
     fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float): Rect {
-        return connectionManager.getRoomRect(room, zone, density, zoomLevel)
+        return CoordinateConverter.getRoomRect(room, zone, density, zoomLevel)
     }
 }

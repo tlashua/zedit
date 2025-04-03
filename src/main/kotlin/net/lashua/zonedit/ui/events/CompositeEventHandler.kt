@@ -23,7 +23,8 @@ class CompositeEventHandler(
         log.debug("Applying {} event handlers", handlers.size)
         var result = modifier
 
-        for (handler in handlers) {
+        // Apply handlers in reverse order so that the last handler in the list gets first chance to handle events
+        for (handler in handlers.reversed()) {
             result = handler.applyTo(
                 state,
                 result,
@@ -44,10 +45,13 @@ class CompositeEventHandler(
         fun default(): CompositeEventHandler {
             return CompositeEventHandler(
                 listOf(
+                    // Handlers are applied in reverse order, so the last handler in this list
+                    // gets first chance to handle events
                     PointerPositionHandler(),
                     RoomSelectionHandler(),
                     ConnectionContextMenuHandler(),
-                    DragHandler()
+                    // Use the combined drag handler instead of separate handlers
+                    CombinedDragHandler()
                 )
             )
         }

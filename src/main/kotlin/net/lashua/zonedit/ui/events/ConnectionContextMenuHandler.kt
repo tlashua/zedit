@@ -23,7 +23,7 @@ class ConnectionContextMenuHandler : EventHandler {
         canvasWidthDp: Float,
         canvasHeightDp: Float
     ): Modifier {
-        return modifier.pointerInput(Unit) {
+        return modifier.pointerInput(zoomLevel) {
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)

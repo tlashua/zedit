@@ -6,6 +6,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import net.lashua.zonedit.util.CoordinateConverter
 import org.slf4j.LoggerFactory
 import kotlin.math.abs
 import kotlin.math.pow
@@ -36,17 +37,8 @@ class ConnectionManager {
      * @return A Rect representing the room's position and size on screen
      */
     fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float): Rect {
-        // Convert model coordinates (dp) to screen coordinates (px)
-        // Consistently apply both density and zoomLevel to all dimensions
-        val screenX = room.position.x * density * zoomLevel
-        val screenY = room.position.y * density * zoomLevel
-        val width = zone.nodeWidthDp * density * zoomLevel
-        val height = zone.nodeHeightDp * density * zoomLevel
-
-        return Rect(
-            offset = Offset(screenX, screenY),
-            size = Size(width, height)
-        )
+        // Use the CoordinateConverter to ensure consistent coordinate conversion
+        return CoordinateConverter.getRoomRect(room, zone, density, zoomLevel)
     }
 
     /**
@@ -122,7 +114,12 @@ class ConnectionManager {
         val distance = sqrt(
             (point.x - target.x).pow(2) + (point.y - target.y).pow(2)
         )
-        return distance <= threshold
+        val result = distance <= threshold
+
+        log.debug("isNearPoint: point=({}, {}), target=({}, {}), distance={}, threshold={}, result={}",
+            point.x, point.y, target.x, target.y, distance, threshold, result)
+
+        return result
     }
 
     /**
@@ -497,11 +494,16 @@ class ConnectionManager {
         }
 
         // Check if we're close enough to the closest point
-        return if (closestPoint != null && isNearPoint(point, closestPoint.position, threshold)) {
+        val result = if (closestPoint != null && isNearPoint(point, closestPoint.position, threshold)) {
             closestPoint
         } else {
             null
         }
+
+        log.debug("findClosestConnectionPoint for room {}: point=({}, {}), closest={}, threshold={}, result={}",
+            room.id, point.x, point.y, closestPoint?.position, threshold, result?.direction)
+
+        return result
     }
 
     /**
@@ -603,9 +605,18 @@ class ConnectionManager {
      * @return The room at the point, or null if no room is found
      */
     fun findRoomAtPoint(zone: Zone, point: Offset, density: Float, zoomLevel: Float): Room? {
-        return zone.rooms.firstOrNull { room ->
-            val roomRect = getRoomRect(room, zone, density, zoomLevel)
-            roomRect.contains(point)
+        log.debug("findRoomAtPoint: point=({}, {}) with density={}, zoom={}",
+            point.x, point.y, density, zoomLevel)
+
+        val result = zone.rooms.firstOrNull { room ->
+            val roomRect = CoordinateConverter.getRoomRect(room, zone, density, zoomLevel)
+            val contains = CoordinateConverter.containsPoint(roomRect, point, 2f)
+            log.debug("  checking room {}: rect=({}, {}, {}, {}), contains={}",
+                room.id, roomRect.left, roomRect.top, roomRect.right, roomRect.bottom, contains)
+            contains
         }
+
+        log.debug("findRoomAtPoint result: {}", result?.id)
+        return result
     }
 }

@@ -59,9 +59,9 @@ fun ZoneCanvas(
         onPointerPositionChanged = onPointerPositionChanged
     )
 
-    LaunchedEffect(canvasWidthDp, canvasHeightDp) {
-        log.debug("Canvas dimensions updated - width: {}dp, height: {}dp",
-            canvasWidthDp.value, canvasHeightDp.value)
+    LaunchedEffect(canvasWidthDp, canvasHeightDp, zoomLevel) {
+        log.debug("Canvas dimensions updated - width: {}dp, height: {}dp, zoom: {}",
+            canvasWidthDp.value, canvasHeightDp.value, zoomLevel)
     }
 
     Box(

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.remember
+import net.lashua.zonedit.util.CoordinateConverter
 
 /**
  * Component for drawing a grid on the canvas
@@ -41,7 +42,7 @@ object GridComponent {
                     color = if (isMajor) Color.Gray else Color.LightGray,
                     start = Offset(0f, y),
                     end = Offset(size.width, y),
-                    strokeWidth = if (isMajor) 1f else 0.5f
+                    strokeWidth = if (isMajor) CoordinateConverter.scaleWithZoom(1f, zoomLevel) else CoordinateConverter.scaleWithZoom(0.5f, zoomLevel)
                 )
             }
 
@@ -53,7 +54,7 @@ object GridComponent {
                     color = if (isMajor) Color.Gray else Color.LightGray,
                     start = Offset(x, 0f),
                     end = Offset(x, size.height),
-                    strokeWidth = if (isMajor) 1f else 0.5f
+                    strokeWidth = if (isMajor) CoordinateConverter.scaleWithZoom(1f, zoomLevel) else CoordinateConverter.scaleWithZoom(0.5f, zoomLevel)
                 )
             }
         }

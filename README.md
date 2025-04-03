@@ -30,7 +30,7 @@ Features that work or should work now
 - snap to grid
 
 
-Connections
+## Connections
 
 These are edges in the directed graph, therefore a bi-directional connection requires two edges.
 Bi-directional connections are displayed with a single line that has an arrowhead on each end, but
@@ -57,6 +57,14 @@ that still represents two edges.  Basic rules of connections:
   have an east exit back to room a.  It's a little odd, but people do it and sometimes it
   makes sense.  It is also common for an exit to lead back into the room it came from.  That
   is useful for mazes and various other things.
+
+### Creating connections
+There are two ways to create a connection.  When you select a node small circles will appear
+around the border.  Those circles are _connection points_.  If you click on a connection point
+and drag to another node, it will create a connection between the two nodes.  If you click
+on a connection point and drag to a blank space, then release, it will create a new node
+that is connected to the node you started dragging from.
+
 
 BUGS
 You can only have one connection coming into the same side of a room.  There should be no limit.
