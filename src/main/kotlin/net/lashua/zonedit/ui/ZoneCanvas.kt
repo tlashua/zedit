@@ -9,6 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -83,7 +85,7 @@ fun ZoneCanvas(
         // Apply all event handlers to the modifier
         val modifierWithEvents = eventHandler.applyTo(
             state = state,
-            modifier = canvasModifier,
+            modifier = canvasModifier.semantics { testTag = "zoneCanvas" },
             density = density,
             zoomLevel = zoomLevel,
             canvasWidthDp = canvasWidthDp.value,
