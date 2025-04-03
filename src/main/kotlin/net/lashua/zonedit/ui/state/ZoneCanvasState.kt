@@ -137,11 +137,12 @@ class ZoneCanvasState(
                 )
             } else {
                 // Create new room with connection
+                // Allow creating rooms beyond the visible canvas area, only constrain to prevent negative positions
                 val modelX = (state.currentPoint.x / (density * zoomLevel))
-                    .coerceIn(0f, canvasWidthDp - zone.nodeWidthDp)
+                    .coerceAtLeast(0f)
 
                 val modelY = (state.currentPoint.y / (density * zoomLevel))
-                    .coerceIn(0f, canvasHeightDp - zone.nodeHeightDp)
+                    .coerceAtLeast(0f)
 
                 zone.createRoomWithConnection(
                     sourceRoom,
@@ -179,7 +180,7 @@ class ZoneCanvasState(
         if (zone != newZone) {
             zone = newZone
         }
-        
+
         if (selectedRoom != newSelectedRoom) {
             selectedRoom = newSelectedRoom
         }

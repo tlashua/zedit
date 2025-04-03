@@ -49,18 +49,14 @@ class RoomDragHandler : EventHandler {
                         val oldPos = room.position
 
                         // Calculate new position first without snapping
-                        val rawX =
-                            (oldPos.x + modelDragX).coerceIn(0f, canvasWidthDp - state.zone.nodeWidthDp)
-                        val rawY = (oldPos.y + modelDragY).coerceIn(
-                            0f,
-                            canvasHeightDp - state.zone.nodeHeightDp
-                        )
+                        // Allow dragging beyond the visible canvas area, only constrain to prevent negative positions
+                        val rawX = (oldPos.x + modelDragX).coerceAtLeast(0f)
+                        val rawY = (oldPos.y + modelDragY).coerceAtLeast(0f)
 
                         log.debug(
-                            "Drag position - Old: ({}, {}), Raw new: ({}, {}), Canvas: {}x{}, Node: {}x{}, Zoom: {}",
+                            "Drag position - Old: ({}, {}), New: ({}, {}), Node: {}x{}, Zoom: {}",
                             oldPos.x, oldPos.y,
                             rawX, rawY,
-                            canvasWidthDp, canvasHeightDp,
                             state.zone.nodeWidthDp, state.zone.nodeHeightDp,
                             zoomLevel
                         )

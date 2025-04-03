@@ -28,11 +28,11 @@ class DragHandler : EventHandler {
             detectDragGestures(
                 onDragStart = { offset ->
                     log.debug("Drag start at: ({}, {})", offset.x, offset.y)
-                    
+
                     // First, check if we're starting a connection drag (higher priority)
                     if (state.selectedRoom != null) {
                         val connectionStarted = tryStartConnectionDrag(state, offset, density, zoomLevel)
-                        
+
                         // Only try to drag room if we're not starting a connection drag
                         if (!connectionStarted) {
                             tryStartRoomDrag(state, offset, density, zoomLevel)
@@ -44,11 +44,11 @@ class DragHandler : EventHandler {
                 },
                 onDrag = { change, dragAmount ->
                     change.consume()
-                    
+
                     // Handle connection dragging
                     if (state.connectionDragState != null) {
                         state.updateConnectionDragPoint(state.connectionDragState!!.currentPoint + dragAmount)
-                    } 
+                    }
                     // Handle room dragging
                     else if (state.draggedRoomId != null) {
                         // Accumulate the drag amount before snapping
@@ -59,18 +59,14 @@ class DragHandler : EventHandler {
                         val oldPos = room.position
 
                         // Calculate new position first without snapping
-                        val rawX =
-                            (oldPos.x + modelDragX).coerceIn(0f, canvasWidthDp - state.zone.nodeWidthDp)
-                        val rawY = (oldPos.y + modelDragY).coerceIn(
-                            0f,
-                            canvasHeightDp - state.zone.nodeHeightDp
-                        )
+                        // Allow dragging beyond the visible canvas area, only constrain to prevent negative positions
+                        val rawX = (oldPos.x + modelDragX).coerceAtLeast(0f)
+                        val rawY = (oldPos.y + modelDragY).coerceAtLeast(0f)
 
                         log.debug(
-                            "Drag position - Old: ({}, {}), Raw new: ({}, {}), Canvas: {}x{}, Node: {}x{}, Zoom: {}",
+                            "Drag position - Old: ({}, {}), New: ({}, {}), Node: {}x{}, Zoom: {}",
                             oldPos.x, oldPos.y,
                             rawX, rawY,
-                            canvasWidthDp, canvasHeightDp,
                             state.zone.nodeWidthDp, state.zone.nodeHeightDp,
                             zoomLevel
                         )
@@ -84,14 +80,14 @@ class DragHandler : EventHandler {
                 },
                 onDragEnd = {
                     log.debug("=== Drag End ===")
-                    
+
                     // Finalize connection drag
                     if (state.connectionDragState != null) {
                         log.debug("Finalizing connection drag: sourceRoom={}, direction={}, corner={}",
                             state.connectionDragState?.sourceRoomId,
                             state.connectionDragState?.direction,
                             state.connectionDragState?.sourceCorner)
-                            
+
                         state.finalizeConnectionDrag(
                             state.connectionDragState!!.currentPoint,
                             density,
@@ -100,22 +96,22 @@ class DragHandler : EventHandler {
                             canvasHeightDp
                         )
                     }
-                    
+
                     // Log room drag end
                     if (state.draggedRoomId != null) {
                         log.debug("Finalizing room drag: {}", state.draggedRoomId)
                     }
-                    
+
                     // Stop all dragging operations
                     state.stopDragging()
                 }
             )
         }
     }
-    
+
     /**
      * Try to start a connection drag
-     * 
+     *
      * @return true if a connection drag was started, false otherwise
      */
     private fun tryStartConnectionDrag(
@@ -161,17 +157,17 @@ class DragHandler : EventHandler {
                 direction.second
             )
             state.startConnectionDrag(
-                state.selectedRoom!!, 
-                direction.first!!, 
-                offset, 
+                state.selectedRoom!!,
+                direction.first!!,
+                offset,
                 direction.second ?: "RIGHT"
             )
             return true
         }
-        
+
         return false
     }
-    
+
     private fun tryStartRoomDrag(
         state: ZoneCanvasState,
         offset: Offset,
