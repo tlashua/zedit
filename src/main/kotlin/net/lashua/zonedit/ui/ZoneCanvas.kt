@@ -44,7 +44,7 @@ fun ZoneCanvas(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current.density
-    val baseGridSize = 20.dp
+    val gridSizeDp = zone.gridSizeDp.dp
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
     val textMeasurer = rememberTextMeasurer()
@@ -94,7 +94,7 @@ fun ZoneCanvas(
             modifier = modifierWithEvents
         ) {
             // Draw grid
-            GridComponent.draw(this, baseGridSize, zoomLevel, size)
+            GridComponent.draw(this, gridSizeDp, zoomLevel, size)
 
             // Draw existing connections
             for (room in state.zone.rooms) {

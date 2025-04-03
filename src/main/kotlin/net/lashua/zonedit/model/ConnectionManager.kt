@@ -37,8 +37,9 @@ class ConnectionManager {
      */
     fun getRoomRect(room: Room, zone: Zone, density: Float, zoomLevel: Float): Rect {
         // Convert model coordinates (dp) to screen coordinates (px)
-        val screenX = room.position.x * zoomLevel
-        val screenY = room.position.y * zoomLevel
+        // Consistently apply both density and zoomLevel to all dimensions
+        val screenX = room.position.x * density * zoomLevel
+        val screenY = room.position.y * density * zoomLevel
         val width = zone.nodeWidthDp * density * zoomLevel
         val height = zone.nodeHeightDp * density * zoomLevel
 

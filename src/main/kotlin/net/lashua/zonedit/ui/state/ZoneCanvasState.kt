@@ -138,6 +138,7 @@ class ZoneCanvasState(
             } else {
                 // Create new room with connection
                 // Allow creating rooms beyond the visible canvas area, only constrain to prevent negative positions
+                // Convert screen coordinates (px) to model coordinates (dp)
                 val modelX = (state.currentPoint.x / (density * zoomLevel))
                     .coerceAtLeast(0f)
 

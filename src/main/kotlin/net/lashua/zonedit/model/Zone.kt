@@ -18,20 +18,24 @@ data class Zone(
     // Update helper functions to work with dp
     fun getNextRoomNumber(): Int {
         if (rooms.isEmpty()) return 0
-        
+
         return rooms
-            .mapNotNull { room -> 
-                room.id.removePrefix("${name.lowercase()}").toIntOrNull() 
+            .mapNotNull { room ->
+                room.id.removePrefix("${name.lowercase()}").toIntOrNull()
             }
             .maxOrNull()?.plus(1) ?: 0
     }
 
     fun snapPosition(pos: Position): Position {
         if (!snapToGrid) return pos
-        return Position(
-            x = (pos.x / gridSizeDp).roundToInt() * gridSizeDp,
-            y = (pos.y / gridSizeDp).roundToInt() * gridSizeDp
-        )
+
+        val snappedX = (pos.x / gridSizeDp).roundToInt() * gridSizeDp
+        val snappedY = (pos.y / gridSizeDp).roundToInt() * gridSizeDp
+
+        // Add debug logging
+        println("Snapping position: (${pos.x}, ${pos.y}) to (${snappedX}, ${snappedY}) with gridSize=${gridSizeDp}")
+
+        return Position(x = snappedX, y = snappedY)
     }
 
     fun createRoomWithConnection(

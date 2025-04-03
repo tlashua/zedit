@@ -52,8 +52,9 @@ class DragHandler : EventHandler {
                     // Handle room dragging
                     else if (state.draggedRoomId != null) {
                         // Accumulate the drag amount before snapping
-                        val modelDragX = dragAmount.x / zoomLevel
-                        val modelDragY = dragAmount.y / zoomLevel
+                        // Convert screen drag amount (px) to model coordinates (dp)
+                        val modelDragX = dragAmount.x / (density * zoomLevel)
+                        val modelDragY = dragAmount.y / (density * zoomLevel)
 
                         val room = state.zone.rooms.first { it.id == state.draggedRoomId }
                         val oldPos = room.position
