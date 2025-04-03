@@ -6,9 +6,11 @@ import androidx.compose.ui.unit.dp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import net.lashua.zonedit.model.ConnectionManager
 import net.lashua.zonedit.model.ExitDirection
 import net.lashua.zonedit.model.Position
 import net.lashua.zonedit.model.Room
@@ -295,6 +297,37 @@ class ZoneCanvasStateTest : FunSpec({
             // Verify the zone was updated
             verify { onZoneChanged(any()) }
         }
+
+        test("stopDragging should clear the dragged room ID") {
+            // Create a test zone
+            val zone = createTestZone()
+
+            // Mock callbacks
+            val onZoneChanged = mockk<(Zone) -> Unit>(relaxed = true)
+            val onRoomSelected = mockk<(Room?) -> Unit>(relaxed = true)
+            val onConnectionStarted = mockk<(Room, ExitDirection) -> Unit>(relaxed = true)
+            val onPointerPositionChanged = mockk<(Offset?) -> Unit>(relaxed = true)
+
+            // Create the state
+            val state = ZoneCanvasState(
+                initialZone = zone,
+                initialSelectedRoom = null,
+                onZoneChanged = onZoneChanged,
+                onRoomSelected = onRoomSelected,
+                onConnectionStarted = onConnectionStarted,
+                onPointerPositionChanged = onPointerPositionChanged
+            )
+
+            // Start a room drag
+            val room = zone.rooms[0]
+            state.startDraggingRoom(room.id)
+
+            // Stop dragging
+            state.stopDragging()
+
+            // Verify the dragged room ID was cleared
+            state.draggedRoomId shouldBe null
+        }
     }
 
     context("Connection creation and removal") {
@@ -361,6 +394,67 @@ class ZoneCanvasStateTest : FunSpec({
             val updatedInitialRoom = updatedZone.rooms.find { it.id == initialRoom.id }
             updatedInitialRoom?.exits?.get(direction) shouldBe newRoom?.id
             newRoom?.exits?.get(ExitDirection.WEST) shouldBe initialRoom.id
+        }
+
+        // This test is challenging to implement because we can't easily mock the internal connectionManager
+        // Instead, we'll test the behavior indirectly by checking that updateZone is called
+        test("finalizeConnectionDrag should update the zone") {
+            // Create a test zone with two rooms
+            val room1 = Room(
+                id = "test0",
+                name = "Room 1",
+                description = "Test room 1",
+                position = Position(100f, 100f)
+            )
+
+            val room2 = Room(
+                id = "test1",
+                name = "Room 2",
+                description = "Test room 2",
+                position = Position(300f, 100f)
+            )
+
+            val zone = Zone(
+                id = "test",
+                name = "Test Zone",
+                rooms = listOf(room1, room2)
+            )
+
+            // Mock callbacks
+            val onZoneChanged = mockk<(Zone) -> Unit>(relaxed = true)
+            val onRoomSelected = mockk<(Room?) -> Unit>(relaxed = true)
+            val onConnectionStarted = mockk<(Room, ExitDirection) -> Unit>(relaxed = true)
+            val onPointerPositionChanged = mockk<(Offset?) -> Unit>(relaxed = true)
+
+            // Create the state
+            val state = ZoneCanvasState(
+                initialZone = zone,
+                initialSelectedRoom = null,
+                onZoneChanged = onZoneChanged,
+                onRoomSelected = onRoomSelected,
+                onConnectionStarted = onConnectionStarted,
+                onPointerPositionChanged = onPointerPositionChanged
+            )
+
+            // Start a connection drag from room1
+            val direction = ExitDirection.EAST
+            val startPoint = Offset(150f, 100f)
+            state.startConnectionDrag(room1, direction, startPoint, "")
+
+            // Update to a position over room2
+            val endPoint = Offset(300f, 100f) // This is where room2 is located
+            state.updateConnectionDragPoint(endPoint)
+
+            // Finalize the connection drag
+            val density = 1.0f
+            val zoomLevel = 1.0f
+            val canvasWidthDp = 1000f
+            val canvasHeightDp = 800f
+
+            state.finalizeConnectionDrag(endPoint, density, zoomLevel, canvasWidthDp, canvasHeightDp)
+
+            // Verify that updateZone was called
+            verify { onZoneChanged(any()) }
         }
 
         test("removeConnection should remove a bi-directional connection") {
